@@ -162,13 +162,13 @@ func Gradescope() {
 
   getCourseInfo()
 
-  //app.login()
+  app.login()
 
   //need to add more interaction, rn getAssignments is useless
   app.getAssignmnets()
 
   fmt.Printf("Getting grades...\n")
-  //app.downloadGrades(assignmentID)
+  app.downloadGrades(assignmentID)
 
   fmt.Printf("Parsing grades...\n")
   submissions := parseGradesFile(assignmentID+".csv")
