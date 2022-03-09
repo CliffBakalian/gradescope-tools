@@ -14,26 +14,26 @@ var (
 )
 
 type Time struct {
-  hour int8
-  minute int8
-  seconds int8
+  Hour int8
+  Minute int8
+  Seconds int8
 }
 
 type Date struct {
-  year uint16
-  month int8
-  day int8
+  Year uint16
+  Month int8
+  Day int8
 }
 
 type Grade struct {
-  lname string
-  fname string
+  Lname string
+  Fname string
   UID string
-  points float32
-  maxPoints float32
-  date Date
-  time Time
-  late Time
+  Points float32
+  MaxPoints float32
+  Date Date
+  Time Time
+  Late Time
 }
 
 //Go through the csv file and make a list of grade structs
@@ -82,46 +82,46 @@ func ParseGradesFile(filename string) []Grade {
       subtime := subtime_re.FindStringSubmatch(record[9])
       latetime := subtime_re.FindStringSubmatch(record[10])
       subTime = Time{
-        hour: int8(func(x int,y error)int{return x}(strconv.Atoi(subtime[1]))),
-        minute: int8(func(x int,y error)int{return x}(strconv.Atoi(subtime[2]))),
-        seconds: int8(func(x int,y error)int{return x}(strconv.Atoi(subtime[3]))),
+        Hour: int8(func(x int,y error)int{return x}(strconv.Atoi(subtime[1]))),
+        Minute: int8(func(x int,y error)int{return x}(strconv.Atoi(subtime[2]))),
+        Seconds: int8(func(x int,y error)int{return x}(strconv.Atoi(subtime[3]))),
       }
       lateTime = Time{
-        hour: int8(func(x int,y error)int{return x}(strconv.Atoi(latetime[1]))),
-        minute: int8(func(x int,y error)int{return x}(strconv.Atoi(latetime[2]))),
-        seconds: int8(func(x int,y error)int{return x}(strconv.Atoi(latetime[3]))),
+        Hour: int8(func(x int,y error)int{return x}(strconv.Atoi(latetime[1]))),
+        Minute: int8(func(x int,y error)int{return x}(strconv.Atoi(latetime[2]))),
+        Seconds: int8(func(x int,y error)int{return x}(strconv.Atoi(latetime[3]))),
       }
       subDate = Date{
-        year: uint16(func(x int,y error)int{return x}(strconv.Atoi(subdate[1]))),
-        month: int8(func(x int,y error)int{return x}(strconv.Atoi(subdate[2]))),
-        day: int8(func(x int,y error)int{return x}(strconv.Atoi(subdate[3]))),
+        Year: uint16(func(x int,y error)int{return x}(strconv.Atoi(subdate[1]))),
+        Month: int8(func(x int,y error)int{return x}(strconv.Atoi(subdate[2]))),
+        Day: int8(func(x int,y error)int{return x}(strconv.Atoi(subdate[3]))),
       }
     }else {
       //the assignment was not submmited so just use 0 for these
       points = 0.0
       subTime = Time{
-        hour: 0,
-        minute: 0,
-        seconds: 0,
+        Hour: 0,
+        Minute: 0,
+        Seconds: 0,
       }
       lateTime = subTime
       subDate = Date{
-        year: 0,
-        month: 0,
-        day: 0,
+        Year: 0,
+        Month: 0,
+        Day: 0,
       }
     }
 
     //create the grade node in the list
     sub := Grade{
-      lname: lastName,
-      fname: firstName,
+      Lname: lastName,
+      Fname: firstName,
       UID: uid,
-      points: float32(points),
-      maxPoints: float32(max_points),
-      date: subDate,
-      time: subTime,
-      late: lateTime,
+      Points: float32(points),
+      MaxPoints: float32(max_points),
+      Date: subDate,
+      Time: subTime,
+      Late: lateTime,
     }
 
     grades = append(grades, sub)

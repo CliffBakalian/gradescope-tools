@@ -22,6 +22,7 @@ const (
 var (
   assignments = make(map[string]string)
   courseID string
+  assignmentID string
 )
 
 type App struct {
@@ -80,6 +81,7 @@ func (app *App) login() {
   response, err := client.PostForm(loginURL, data)
 
   if err != nil {
+    //Note: if you fail to login, this will not be triggered
     log.Fatalln("Error logging in. ", err)
   }
 
@@ -144,20 +146,43 @@ func (app *App) downloadGrades(assignID string) {
   }
 }
 
+//Should use input flags rather than this
+func getCourseInfo(){
+  fmt.Print("Course ID: ")
+  fmt.Scanln(&courseID)
+  fmt.Print("Assignment ID: ")
+  fmt.Scanln(&assignmentID)
+}
+
 func main() {
   jar, _ := cookiejar.New(nil)
 
   app := App{
     Client: &http.Client{Jar: jar},
   }
-  courseID = "358323"
-  assignmentID := "1896262"
+
+  getCourseInfo()
+
   app.login()
 
-  app.getAssignmnets()
   //need to add more interaction, rn getAssignments is useless
+  app.getAssignmnets()
+
+  fmt.Printf("Getting grades...\n")
   app.downloadGrades(assignmentID)
+
+  fmt.Printf("Parsing grades...\n")
   gradearr := grades.ParseGradesFile(assignmentID+".csv")
-  fmt.Printf("Submission Length: %d\n", len(gradearr))
+
+  fmt.Printf("Getting extensions...\n")
   grades.ReadExtensions()
+
+  fmt.Printf("updating extensions...\n")
+  grades.UpdateExtensions(gradearr, assignmentID)
+
+  fmt.Printf("Writing results...\n")
+  //TODO need to then write modified grades based off tokens 
+  //grades.WriteGrades()
+
+  fmt.Printf("Done :)\n")
 }
