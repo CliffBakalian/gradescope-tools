@@ -88,7 +88,6 @@ func updateExtensions(submissions []Submission, tokens TokenList, assignID strin
     if (peopleLen > 0 && tokens.Students[studentIdx].UID== currUID){
       currStudent = tokens.Students[studentIdx]
       isNew = false
-      fmt.Printf("%s %s already used tokens\n",submission.fname, submission.lname)
     }else {
       currStudent = Student{
         UID: submission.uid,
@@ -96,13 +95,13 @@ func updateExtensions(submissions []Submission, tokens TokenList, assignID strin
         Assignments: []string{},
       }
       isNew = true
-      fmt.Printf("%s %s used thier first token\n",submission.fname, submission.lname)
     }
 
     //update information
-    tokenNumber := submission.late.hour / 12
+    tokenNumber := (submission.late.hour / 12)+1
     currStudent.Tokens = currStudent.Tokens + int(tokenNumber)
     currStudent.Assignments = append(currStudent.Assignments,assignID)
+    fmt.Printf("%s %s used %d tokens\n",submission.fname, submission.lname,int(currStudent.Tokens))
 
     //update or add person to list
     if isNew {

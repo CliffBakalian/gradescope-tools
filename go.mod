@@ -1,10 +1,10 @@
-module github.com/cliffbakalian/gradescope-tools/assignment-grades
+module github.com/cliffbakalian/gradescope-tools
 
 go 1.17
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
-	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
+	golang.org/x/crypto v0.0.0-20220312131142-6068a2e6cfdc
 )
 
 require (
