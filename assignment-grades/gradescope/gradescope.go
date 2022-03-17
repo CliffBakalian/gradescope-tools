@@ -164,7 +164,7 @@ func Gradescope() {
 
   app.login()
 
-  //need to add more interaction, rn getAssignments is useless
+  need to add more interaction, rn getAssignments is useless
   app.getAssignmnets()
 
   fmt.Printf("Getting grades...\n")

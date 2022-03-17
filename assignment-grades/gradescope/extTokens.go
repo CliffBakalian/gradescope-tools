@@ -9,7 +9,7 @@ import(
 )
 
 var (
-  //maps UID to index in []Person
+  //maps UID to index in []Tokenlist
   studentIDs = make(map[string]int)
   //how long before tokens are used. Default 2 minutes
   timeLeniency = int8(2)
@@ -45,7 +45,7 @@ func readExtensions() TokenList{
     return TokenList{Students: []Student{}}
   }
 
-  //need some way to easily access a person by UID in the Person array
+  //need some way to easily access a person by UID in the TokenList array
   for index,value := range(tokens.Students){
     studentIDs[value.UID] = index
   }
@@ -99,9 +99,10 @@ func updateExtensions(submissions []Submission, tokens TokenList, assignID strin
 
     //update information
     tokenNumber := (submission.late.hour / 12)+1
+    oldTokens := currStudent.Tokens
     currStudent.Tokens = currStudent.Tokens + int(tokenNumber)
     currStudent.Assignments = append(currStudent.Assignments,assignID)
-    fmt.Printf("%s %s used %d tokens\n",submission.fname, submission.lname,int(currStudent.Tokens))
+    fmt.Printf("%s %s (%s) had %d, submitted %d hours late, and has used %d tokens\n",submission.fname, submission.lname,currStudent.UID,oldTokens,submission.late.hour,int(currStudent.Tokens))
 
     //update or add person to list
     if isNew {
