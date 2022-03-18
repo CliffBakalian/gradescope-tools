@@ -9,6 +9,7 @@ import (
   "io"
   "io/ioutil"
   "net/url"
+  "regexp"
 
   "golang.org/x/crypto/ssh/terminal"
   "github.com/PuerkitoBio/goquery"
@@ -16,12 +17,6 @@ import (
 
 const (
   baseURL = "https://www.gradescope.com"
-)
-
-var (
-  assignments = make(map[string]string)
-  courseID string
-  assignmentID string
 )
 
 type App struct {
@@ -59,22 +54,25 @@ func (app *App) getToken() AuthenticityToken {
 }
 
 //prompt login creds and then login
-func (app *App) login() {
+func getLoginCreds() (string,string){
+  fmt.Print("Gradescope email: ")
+  var email string
+  fmt.Scanln(&email)
+  fmt.Print("Enter password: ")
+  password, _:= terminal.ReadPassword(0)
+  return email, string(password)
+}
+
+func (app *App) login(email string, password string) {
   client := app.Client
   authenticityToken := app.getToken()
 
   loginURL := baseURL + "/login"
 
-  fmt.Print("Gradescope email: ")
-  var email string
-  fmt.Scanln(&email)
-  fmt.Print("Enter password: ")
-  password, err := terminal.ReadPassword(0)
-
   data := url.Values{
     "authenticity_token": {authenticityToken.Token},
     "session[email]":     {email},
-    "session[password]":  {string(password)},
+    "session[password]":  {password},
   }
 
   response, err := client.PostForm(loginURL, data)
@@ -93,9 +91,10 @@ func (app *App) login() {
 }
 
 //go to assignments page and get all names and links
-func (app *App) getAssignmnets() {
+func (app *App) getAssignments(courseID string) map[string]string{
   assignURL:= baseURL+"/courses/"+courseID+"/assignments"
   client := app.Client
+  assignments := make(map[string]string)
 
   response, err := client.Get(assignURL)
   if err != nil {
@@ -111,16 +110,20 @@ func (app *App) getAssignmnets() {
 
   //class in which the link to the assignments are. The text is name
   //of assignment whereas link holds the assignmnet ID
+  assignment_link_re := regexp.MustCompile(`assignments\/(\d+)`)
   document.Find(".table--primaryLink a").Each(func(i int, s*goquery.Selection) {
-    name, _:= s.Attr("href")
-    //TODO parse 'name' for ID. Currently its a link
-    assignments[s.Text()] = name
+    link, _:= s.Attr("href")
+
+    a_id := assignment_link_re.FindStringSubmatch(link)
+    assignments[a_id[1]] = s.Text()
   })
+  return assignments
 }
+
 
 //download the csvfile. The file is just the assignmnet url with 'scores.csv'
 //tacked on. 
-func (app *App) downloadGrades(assignID string) {
+func (app *App) downloadGrades(courseID string, assignID string) {
   gradesURL := baseURL+"/courses/"+courseID+"/assignments/"+assignID+"/scores.csv"
   client := app.Client
 
@@ -128,7 +131,7 @@ func (app *App) downloadGrades(assignID string) {
 
   if err != nil {
     log.Fatalln("Error getting grades.csv. ", err)
-  } 
+  }
 
   defer response.Body.Close()
 
@@ -146,37 +149,42 @@ func (app *App) downloadGrades(assignID string) {
 }
 
 //Should use input flags rather than this
-func getCourseInfo(){
+func getCourseInfo() (string,string){
+  var course, assignment string
   fmt.Print("Course ID: ")
-  fmt.Scanln(&courseID)
+  fmt.Scanln(&course)
   fmt.Print("Assignment ID: ")
-  fmt.Scanln(&assignmentID)
+  fmt.Scanln(&assignment)
+  return course,assignment
 }
 
-func Gradescope() {
+func Gradescope(interactive bool,course string, assignment string, email string, password string) {
   jar, _ := cookiejar.New(nil)
 
   app := App{
     Client: &http.Client{Jar: jar},
   }
 
-  getCourseInfo()
+  if interactive {
+    course,assignment = getCourseInfo()
+    email,password = getLoginCreds()
+  }
 
-  app.login()
+  app.login(email,password)
 
-  need to add more interaction, rn getAssignments is useless
-  app.getAssignmnets()
+  //need to add more interaction, rn getAssignments is useless
+  app.getAssignments(course)
 
   fmt.Printf("Getting grades...\n")
-  app.downloadGrades(assignmentID)
+  app.downloadGrades(course, assignment)
 
   fmt.Printf("Parsing grades...\n")
-  submissions := parseGradesFile(assignmentID+".csv")
+  submissions := parseGradesFile(assignment+".csv")
 
   fmt.Printf("Getting extensions...\n")
   tokenList := readExtensions()
   fmt.Printf("updating extensions...\n")
-  updatedTokens := updateExtensions(submissions, tokenList, assignmentID)
+  updatedTokens := updateExtensions(submissions, tokenList, assignment)
   fmt.Printf("Writing extensions...\n")
   writeExtensions(updatedTokens)
   fmt.Printf("Writing results...\n")
