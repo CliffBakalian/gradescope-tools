@@ -1,7 +1,7 @@
 package main
 
 import (
-  "github.com/cliffbakalian/gradescope-tools/assignment-grades/gradescope"
+  "github.com/cliffbakalian/gradescope-tools/grading-stats/gradescope"
   "flag"
 )
 

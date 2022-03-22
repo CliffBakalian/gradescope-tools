@@ -5,8 +5,6 @@ import (
   "net/http"
   "net/http/cookiejar"
   "log"
-  "os"
-  "io"
   "io/ioutil"
   "net/url"
   "regexp"
@@ -144,7 +142,8 @@ func Gradescope(interactive bool,course string, assignment string, email string,
 
   app.login(email,password)
 
-  graders := getGraders(client)
-  stats := getStats(graders)
-  fmt.Println(stats)
+  graders := app.GetGraders(course)
+  fmt.Println(graders)
+  //stats := getStats(graders)
+  //fmt.Println(stats)
 }
