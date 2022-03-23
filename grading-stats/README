@@ -2,7 +2,14 @@
 
 #installation 
 
-you can install this by running `go install github.com/cliffbakalian/gradescope-tools/grading-stats`
+you can install this by running `go install github.com/cliffbakalian/gradescope-tools/grading-stats`  
+Note: make sure your $GOPATH is set. I beieve my default it is not. Assuming go is installed in `~/go`
+you should be able to run:
+```
+export GOPATH="$HOME/go"
+PATH="$GOPATH/bin:$PATH"
+```
+to add the install binary to your path
 
 ## Running the program
 I would suggest running the program in interactive mode:
