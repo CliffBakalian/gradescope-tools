@@ -132,8 +132,7 @@ func getCourseInfo() (string,string){
   return course,assignment
 }
 
-//func Gradescope(interactive bool,course string, assignment string, email string, password string) {
-func Gradescope(interactive bool,course string, assignment string, email string) {
+func Gradescope(interactive bool,course string, assignment string, email string, password string) {
   jar, _ := cookiejar.New(nil)
 
   app := App{
@@ -143,9 +142,8 @@ func Gradescope(interactive bool,course string, assignment string, email string)
   if interactive {
     course,assignment = getCourseInfo()
     email = getLoginCreds()
-//    password := getPassword()
+    password = getPassword()
   }
-  password := getPassword()
 
   app.login(email,password)
   graders := app.GetGraders(course)
