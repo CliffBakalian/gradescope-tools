@@ -1,0 +1,39 @@
+# Gradescope Grading Stats
+
+#installation 
+
+## Running the program
+you can run the program with  
+```
+go run main.go -interactive
+```
+
+### Default Mode
+
+The default mode requires you pass in information via command line arguments  
+I currently have issues with taking in the password as a command line argument (gret for scripting but otherwise such a security risk) so you can only feed in a course id, an assignment id and the login email.
+
+Gradescope urls look like https://www.gradescope.com/courses/XXXXX/assignments/YYYYYYY/ where XXXXXX is the course id and YYYYYYY is the assignment id.
+
+So to get the stats of a particular assignment you could run 
+```
+go run main.go -course XXXXXX -assignment YYYYYYY -email cliffbakalian@gmail.com
+```
+
+if you wanted to try and put your password in you can 
+  + comment line 19 in main.go
+  + comment lines 136 and 148 in gradescope/gradescope.go
+  + uncomment lines 14 and 18 in main.go
+  + uncomment lines 135 and 146 in gradescope/gradescope.go
+Then run 
+```
+go run main.go -course XXXXXX -assignment YYYYYYY -email cliffbakalian@gmail.com -password ZZZZZZZ
+```
+
+### Interactive Mode
+
+Alternatively you can run 
+```
+go run main.go -interactive
+```
+for the program to prompt you for all information

@@ -51,14 +51,18 @@ func (app *App) getToken() AuthenticityToken {
   return authenticityToken
 }
 
+func getPassword() string{
+  fmt.Print("Enter password: ")
+  password, _:= terminal.ReadPassword(0)
+  return string(password)
+}
+
 //prompt login creds and then login
-func getLoginCreds() (string,string){
+func getLoginCreds() string{
   fmt.Print("Gradescope email: ")
   var email string
   fmt.Scanln(&email)
-  fmt.Print("Enter password: ")
-  password, _:= terminal.ReadPassword(0)
-  return email, string(password)
+  return email
 }
 
 func (app *App) login(email string, password string) {
@@ -128,7 +132,8 @@ func getCourseInfo() (string,string){
   return course,assignment
 }
 
-func Gradescope(interactive bool,course string, assignment string, email string, password string) {
+//func Gradescope(interactive bool,course string, assignment string, email string, password string) {
+func Gradescope(interactive bool,course string, assignment string, email string) {
   jar, _ := cookiejar.New(nil)
 
   app := App{
@@ -137,13 +142,15 @@ func Gradescope(interactive bool,course string, assignment string, email string,
 
   if interactive {
     course,assignment = getCourseInfo()
-    email,password = getLoginCreds()
+    email = getLoginCreds()
+//    password := getPassword()
   }
+  password := getPassword()
 
   app.login(email,password)
-
   graders := app.GetGraders(course)
-  fmt.Println(graders)
-  //stats := getStats(graders)
-  //fmt.Println(stats)
+  questions := app.GetQuestions(course,assignment)
+  stats := app.getStats(course,questions)
+  rendered_stats := print_stats(graders,stats)
+  fmt.Println(rendered_stats)
 }
