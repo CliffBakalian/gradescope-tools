@@ -10,6 +10,7 @@ import (
   "io/ioutil"
   "net/url"
   "regexp"
+  "strings"
 
   "golang.org/x/crypto/ssh/terminal"
   "github.com/PuerkitoBio/goquery"
@@ -173,13 +174,17 @@ func Gradescope(interactive bool,course string, assignment string, email string,
   app.login(email,password)
 
   //need to add more interaction, rn getAssignments is useless
-  app.getAssignments(course)
+  ass := app.getAssignments(course)
+  fmt.Print(ass)
 
   fmt.Printf("Getting grades...\n")
   app.downloadGrades(course, assignment)
 
   fmt.Printf("Parsing grades...\n")
   submissions := parseGradesFile(assignment+".csv")
+
+  fmt.Printf("Storing grades...\n")
+  os.Rename(assignment+".csv",strings.ReplaceAll(ass[assignment], " ", "_")+".csv")
 
   fmt.Printf("Getting extensions...\n")
   tokenList := readExtensions()
