@@ -27,6 +27,8 @@ type AuthenticityToken struct {
   Token string
 }
 
+var gsClient App
+
 //need authenticty token when logging in
 func (app *App) getToken() AuthenticityToken {
   loginURL := baseURL + "/login"
@@ -91,6 +93,42 @@ func (app *App) login(email string, password string) {
   }
 }
 
+func (app *App) getCourses() map[string]string{
+  coursesURL:= baseURL
+  client := app.Client
+  courses := make(map[string]string)
+
+  response, err := client.Get(coursesURL)
+  if err != nil {
+    log.Fatalln("Error getting assignments. ",err)
+  }
+
+  defer response.Body.Close()
+
+  document, err := goquery.NewDocumentFromReader(response.Body)
+  if err != nil {
+    log.Fatalln("Error getting grades body. ", err)
+  }
+
+  //find the classes id and name, then map name to ID
+  //look at only this current semester
+  document.Find(".courseList--coursesForTerm").Each(func(i int, s*goquery.Selection) {
+    //look at only this current semester
+    if i == 0{
+      course_link_re := regexp.MustCompile(`courses\/(\d+)`)
+      s.Find(".courseBox").Each(func(i int, o*goquery.Selection){
+        link,_ := o.Attr("href")
+        o.Find(".courseBox--shortname").Each(func(i int, p*goquery.Selection){
+          c_id := course_link_re.FindStringSubmatch(link)
+          courses[c_id[1]] = p.Text()
+        })
+      })
+    }
+  })
+
+  return courses
+}
+
 //go to assignments page and get all names and links
 func (app *App) getAssignments(courseID string) map[string]string{
   assignURL:= baseURL+"/courses/"+courseID+"/assignments"
@@ -121,6 +159,13 @@ func (app *App) getAssignments(courseID string) map[string]string{
   return assignments
 }
 
+func grade(courseID string, assignID string, app App){
+  app.downloadGrades(courseID,assignID)
+  submissions := parseGradesFile(assignID+".csv")
+  tokenList := readExtensions()
+  updatedTokens := updateExtensions(submissions, tokenList, assignID)
+  writeExtensions(updatedTokens)
+}
 
 //download the csvfile. The file is just the assignmnet url with 'scores.csv'
 //tacked on. 
@@ -150,13 +195,22 @@ func (app *App) downloadGrades(courseID string, assignID string) {
 }
 
 //Should use input flags rather than this
-func getCourseInfo() (string,string){
-  var course, assignment string
+func getCourseID() string{
+  var course string
   fmt.Print("Course ID: ")
   fmt.Scanln(&course)
+  return course
+}
+
+func getAssignID() string{
+  var assignment string
   fmt.Print("Assignment ID: ")
   fmt.Scanln(&assignment)
-  return course,assignment
+  return assignment
+}
+
+func getCourseInfo() (string,string){
+  return getCourseID(),getAssignID()
 }
 
 func Gradescope(interactive bool,course string, assignment string, email string, password string) {
@@ -165,13 +219,14 @@ func Gradescope(interactive bool,course string, assignment string, email string,
   app := App{
     Client: &http.Client{Jar: jar},
   }
+  email,password = getLoginCreds()
+  app.login(email,password)
 
   if interactive {
-    course,assignment = getCourseInfo()
-    email,password = getLoginCreds()
-  }
+    startRepl(app)
+  }else{
 
-  app.login(email,password)
+  course,assignment = getCourseInfo()
 
   //need to add more interaction, rn getAssignments is useless
   ass := app.getAssignments(course)
@@ -197,4 +252,5 @@ func Gradescope(interactive bool,course string, assignment string, email string,
   //grades.WriteGrades()
 
   fmt.Printf("Done :)\n")
+  }
 }
