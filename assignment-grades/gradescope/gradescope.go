@@ -7,7 +7,6 @@ import (
   "log"
   "os"
   "io"
-  "io/ioutil"
   "net/url"
   "regexp"
   "strings"
@@ -87,10 +86,13 @@ func (app *App) login(email string, password string) {
 
   defer response.Body.Close()
 
-  _, err = ioutil.ReadAll(response.Body)
-  if err != nil {
-    log.Fatalln("Error Login Body. ", err)
-  }
+  doc, err := goquery.NewDocumentFromReader(response.Body)
+  doc.Find(".alert-error span").Each(func(i int, s*goquery.Selection) {
+    if s.Text() == "Invalid email/password combination." {
+      log.Fatalln(s.Text())
+    }
+  })
+
 }
 
 func (app *App) getCourses() map[string]string{
