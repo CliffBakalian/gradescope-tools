@@ -4,17 +4,8 @@ import (
   "fmt"
   "net/http"
   "net/http/cookiejar"
-  "log"
-  "io/ioutil"
-  "net/url"
-  "regexp"
 
   "golang.org/x/crypto/ssh/terminal"
-  "github.com/PuerkitoBio/goquery"
-)
-
-const (
-  baseURL = "https://www.gradescope.com"
 )
 
 type App struct {
@@ -24,131 +15,88 @@ type AuthenticityToken struct {
   Token string
 }
 
-//need authenticty token when logging in
-func (app *App) getToken() AuthenticityToken {
-  loginURL := baseURL + "/login"
-  client := app.Client
+var semester Semester
 
-  response, err := client.Get(loginURL)
-
-  if err != nil {
-    log.Fatalln("Error fetching login page. ", err)
-  }
-
-  defer response.Body.Close()
-
-  document, err := goquery.NewDocumentFromReader(response.Body)
-  if err != nil {
-    log.Fatalln("Error reading HTTP response. ", err)
-  }
-
-  token, _ := document.Find("input[name='authenticity_token']").Attr("value")
-
-  authenticityToken := AuthenticityToken{
-    Token: token,
-  }
-
-  return authenticityToken
-}
-
+//prompt password
 func getPassword() string{
   fmt.Print("Enter password: ")
   password, _:= terminal.ReadPassword(0)
   return string(password)
 }
 
-//prompt login creds and then login
-func getLoginCreds() string{
+//prompt email
+func getEmail() string{
   fmt.Print("Gradescope email: ")
   var email string
   fmt.Scanln(&email)
   return email
 }
 
-func (app *App) login(email string, password string) {
-  client := app.Client
-  authenticityToken := app.getToken()
-
-  loginURL := baseURL + "/login"
-
-  data := url.Values{
-    "authenticity_token": {authenticityToken.Token},
-    "session[email]":     {email},
-    "session[password]":  {password},
-  }
-
-  response, err := client.PostForm(loginURL, data)
-
-  if err != nil {
-    //Note: if you fail to login, this will not be triggered
-    log.Fatalln("Error logging in. ", err)
-  }
-
-  defer response.Body.Close()
-
-  _, err = ioutil.ReadAll(response.Body)
-  if err != nil {
-    log.Fatalln("Error Login Body. ", err)
-  }
-}
-
-//go to assignments page and get all names and links
-func (app *App) getAssignments(courseID string) map[string]string{
-  assignURL:= baseURL+"/courses/"+courseID+"/assignments"
-  client := app.Client
-  assignments := make(map[string]string)
-
-  response, err := client.Get(assignURL)
-  if err != nil {
-    log.Fatalln("Error getting assignments. ",err)
-  }
-
-  defer response.Body.Close()
-
-  document, err := goquery.NewDocumentFromReader(response.Body)
-  if err != nil {
-    log.Fatalln("Error getting grades body. ", err)
-  }
-
-  //class in which the link to the assignments are. The text is name
-  //of assignment whereas link holds the assignmnet ID
-  assignment_link_re := regexp.MustCompile(`assignments\/(\d+)`)
-  document.Find(".table--primaryLink a").Each(func(i int, s*goquery.Selection) {
-    link, _:= s.Attr("href")
-
-    a_id := assignment_link_re.FindStringSubmatch(link)
-    assignments[a_id[1]] = s.Text()
-  })
-  return assignments
-}
-
-//Should use input flags rather than this
-func getCourseInfo() (string,string){
-  var course, assignment string
+func getCourseID() string{
+  var course string
   fmt.Print("Course ID: ")
   fmt.Scanln(&course)
-  fmt.Print("Assignment ID: ")
-  fmt.Scanln(&assignment)
-  return course,assignment
+  return course
 }
 
-func Gradescope(interactive bool,course string, assignment string, email string, password string) {
-  jar, _ := cookiejar.New(nil)
+func getAssignID() string{
+  var assignment string
+  fmt.Print("Assignment ID: ")
+  fmt.Scanln(&assignment)
+  return assignment
+}
 
+//Use this to get graders
+func GetGraders(courseID string,app App)[]string{
+  //try reading from file
+  graders, err := readTAs(courseID)
+  if err != nil || len(graders) == 0{
+    //scrap from gradescope ans store to file
+    return updateTAs(courseID, app) 
+  }
+  return graders
+}
+
+func Gradescope(interactive bool,course string, assignment string, email string, password string, all bool) {
+  jar, _ := cookiejar.New(nil)
   app := App{
     Client: &http.Client{Jar: jar},
   }
 
-  if interactive {
-    course,assignment = getCourseInfo()
-    email = getLoginCreds()
+  if email == ""{
+    email = getEmail()
+  }
+  if password == ""{
     password = getPassword()
   }
-
   app.login(email,password)
-  graders := app.GetGraders(course)
-  questions := app.GetQuestions(course,assignment)
-  stats := app.getStats(course,questions)
+
+  semester,err := readCourses()
+  if err != nil{
+    semester = Semester{Courses:[]Course{}}
+  }
+  if interactive {
+    course = getCourseID()
+    assignment = getAssignID()
+  }else if all{
+    semester = buildSemester(app)
+    writeCourses(semester)
+  }else{
+    if course == ""{
+      course = getCourseID()
+    }
+    if assignment == ""{
+      course = getAssignID()
+    }
+  }
+  graders := GetGraders(course, app)
+  stats,val:= GetStats(semester,course,assignment)
+  if val != -1{ //the assignment or course was not found
+    updateAssignment(app,semester,course,assignment)
+    semester,_ := readCourses()
+    stats,_ = GetStats(semester,course,assignment)
+  }
+
   rendered_stats := print_stats(graders,stats)
   fmt.Println(rendered_stats)
 }

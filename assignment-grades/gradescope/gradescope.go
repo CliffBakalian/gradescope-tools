@@ -55,14 +55,22 @@ func (app *App) getToken() AuthenticityToken {
   return authenticityToken
 }
 
-//prompt login creds and then login
-func getLoginCreds() (string,string){
+
+func getEmail() string{
   fmt.Print("Gradescope email: ")
   var email string
   fmt.Scanln(&email)
+  return email
+}
+
+func getPassword() string{
   fmt.Print("Enter password: ")
   password, _:= terminal.ReadPassword(0)
-  return email, string(password)
+  return string(password)
+}
+//prompt login creds and then login
+func getLoginCreds() (string,string){
+  return getEmail(), getPassword()
 }
 
 func (app *App) login(email string, password string) {
@@ -85,14 +93,13 @@ func (app *App) login(email string, password string) {
   }
 
   defer response.Body.Close()
-
+  //check to make sure login creds were right
   doc, err := goquery.NewDocumentFromReader(response.Body)
   doc.Find(".alert-error span").Each(func(i int, s*goquery.Selection) {
     if s.Text() == "Invalid email/password combination." {
       log.Fatalln(s.Text())
     }
   })
-
 }
 
 func (app *App) getCourses() map[string]string{
@@ -127,7 +134,6 @@ func (app *App) getCourses() map[string]string{
       })
     }
   })
-
   return courses
 }
 
@@ -221,14 +227,24 @@ func Gradescope(interactive bool,course string, assignment string, email string,
   app := App{
     Client: &http.Client{Jar: jar},
   }
-  email,password = getLoginCreds()
+  if email == ""{
+    email = getEmail()
+  }
+  if password == ""{
+    password = getPassword()
+  }
   app.login(email,password)
 
   if interactive {
     startRepl(app)
   }else{
 
-  course,assignment = getCourseInfo()
+  if course == ""{
+    course = getCourseID()
+  }
+  if assignment == ""{
+    assignment = getAssignID()
+  }
 
   //need to add more interaction, rn getAssignments is useless
   ass := app.getAssignments(course)
