@@ -57,28 +57,34 @@ func GetGraders(courseID string,app App)[]string{
   return graders
 }
 
-func Gradescope(interactive bool,course string, assignment string, email string, password string, all bool) {
-  jar, _ := cookiejar.New(nil)
-  app := App{
-    Client: &http.Client{Jar: jar},
-  }
-
-  if email == ""{
+func checkCreds(email string,password string)(string,string){
+  if email==""{
     email = getEmail()
   }
   if password == ""{
     password = getPassword()
   }
+  return email,password
+}
+
+func Gradescope(interactive bool,course string, assignment string, email string, password string, all bool, cache bool) {
+  jar, _ := cookiejar.New(nil)
+  app := App{
+    Client: &http.Client{Jar: jar},
+  }
+  
+  email,password = checkCreds(email,password)
   app.login(email,password)
 
   semester,err := readCourses()
   if err != nil{
     semester = Semester{Courses:[]Course{}}
   }
+
   if interactive {
     course = getCourseID()
     assignment = getAssignID()
-  }else if all{
+  }else if all && !cache{ //can't update and read from cache
     semester = buildSemester(app)
     writeCourses(semester)
   }else{
@@ -89,13 +95,20 @@ func Gradescope(interactive bool,course string, assignment string, email string,
       course = getAssignID()
     }
   }
-  graders := GetGraders(course, app)
-  stats,val:= GetStats(semester,course,assignment)
+  var stats map[string]map[string]int
+  var val int
+  if cache{
+    stats,val = GetStats(semester,course,assignment)
+  }else{
+    stats,val = updateAssignStats(semester,course,assignment,buildQuestions(app,course,assignment))
+  }
   if val != -1{ //the assignment or course was not found
     updateAssignment(app,semester,course,assignment)
     semester,_ := readCourses()
     stats,_ = GetStats(semester,course,assignment)
   }
+
+  graders := GetGraders(course, app)
 
   rendered_stats := print_stats(graders,stats)
   fmt.Println(rendered_stats)

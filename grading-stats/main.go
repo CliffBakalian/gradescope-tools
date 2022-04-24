@@ -13,9 +13,9 @@ func main() {
   email := flag.String("email","cliffbakalian@gmail.com","login email")
   password := flag.String("password","","please never use but helpful for scripting purposes")
   all := flag.Bool("all", false, "scrape everything. May take a while")
-  //cache := flag.Bool("cache", false, "don't scrape, but read from cache")
+  cache := flag.Bool("cache", false, "don't scrape, but read from cache")
 
   flag.Parse()
 
-  gradescope.Gradescope(*interactive, *course_id, *assignment_id, *email, *password, *all /*,*cache*/)
+  gradescope.Gradescope(*interactive, *course_id, *assignment_id, *email, *password, *all ,*cache)
 }

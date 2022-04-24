@@ -35,6 +35,32 @@ func GetStats(semester Semester, courseID string, assignmentID string)(map[strin
   return stats,2
 }
 
+func updateAssignStats(semester Semester,courseID string, assignmentID string,questions []Question)(map[string]map[string]int,int){
+  stats := make(map[string]map[string]int)
+  for _,course := range semester.Courses{
+    if course.Link == courseID{
+      assignments := course.Assignments
+      for _,assignment := range assignments{
+        if assignment.Link == assignmentID{
+          assignment.Questions = questions
+          for _,question := range questions{
+            graders := question.Graded
+            tas := make(map[string]int)
+            for _,grader := range graders{
+              tas[grader.Grader] = grader.Count 
+            }
+            stats[question.Name] = tas
+          }
+          writeCourses(semester)
+          return stats,-1
+        }
+      }
+      return stats,1
+    }
+  }
+  return stats,2
+}
+
 func updateCourse(app App,semester Semester, courseID string){
   //make the new course struct
   name := app.scrapeCourseName(courseID)

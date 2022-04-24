@@ -141,6 +141,7 @@ func updateTAs(courseID string, app App)[]string{
   return tas
 }
 
+/*
 func writeAssignment(courseID string, assignment Assignment, semester Semester){ 
   for _,course := range semester.Courses{
     if course.Link == courseID{
@@ -170,3 +171,4 @@ func writeGrading(courseID string, assignmentID string, questionID string, grade
     }
   }
 }
+*/
