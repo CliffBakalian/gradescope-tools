@@ -75,7 +75,7 @@ func writeCourses(semester Semester){
     log.Fatalln("Could not create file. ",err)
   }
   defer out.Close()
-  
+
   b, err := json.Marshal(semester)
   if err != nil {
     log.Fatalln("Failed to marshal json. ",err)
@@ -116,14 +116,16 @@ func readTAs(course string) ([]string, error){
 }
 
 //write tas to the end. I don't want to rewrite because this file should be manually created. This is only for the case that the file got corrupted. 
-func writeTAs(tas map[string]string,){
+func writeTAs(tas map[string]map[string]string,){
   f,err := os.OpenFile(graderFile,os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
   if err != nil {
     log.Fatal(err)
   }
   for ta,course:= range tas{
-    if _, err := f.Write([]byte(ta+","+course+"\n")); err != nil {
-        log.Fatal(err)
+    for link,name := range course{
+      if _, err := f.Write([]byte(ta+","+link+","+name+"\n")); err != nil {
+          log.Fatal(err)
+      }
     }
   }
   if err := f.Close(); err != nil {
@@ -131,11 +133,27 @@ func writeTAs(tas map[string]string,){
   }
 }
 
+func buildTAFile(app App, semester Semester)map[string]map[string]string{
+    //ta:name -> link->course
+    graders := make(map[string]map[string]string)
+    for _,course := range semester.Courses {
+      tas := app.scrapeTAs(course.Link)
+      for _,ta := range tas{
+        if _,ok := graders[ta]; ok{
+          graders[ta][course.Link] = course.Name
+        }else{
+          graders[ta] = map[string]string{course.Link:course.Name}
+        }
+      }
+    }
+    return graders
+}
+
 func updateTAs(courseID string, app App)[]string{
-  tas := app.scrapeTAs(courseID) 
-  graders := make(map[string]string)
+  tas := app.scrapeTAs(courseID)
+  graders := make(map[string]map[string]string)
   for _,ta := range tas{
-    graders[ta] = courseID
+    graders[ta][courseID] = ""
   }
   writeTAs(graders)
   return tas

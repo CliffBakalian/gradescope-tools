@@ -72,7 +72,7 @@ func Gradescope(interactive bool,course string, assignment string, email string,
   app := App{
     Client: &http.Client{Jar: jar},
   }
-  
+
   email,password = checkCreds(email,password)
   app.login(email,password)
 
@@ -86,6 +86,8 @@ func Gradescope(interactive bool,course string, assignment string, email string,
     assignment = getAssignID()
   }else if all && !cache{ //can't update and read from cache
     semester = buildSemester(app)
+    tas := buildTAFile(app,semester)
+    writeTAs(tas)
     writeCourses(semester)
   }else{
     if course == ""{

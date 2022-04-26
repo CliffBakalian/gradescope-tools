@@ -111,10 +111,9 @@ func updateAssignment(app App, semester Semester, courseID string, assignmentID 
 }
 
 //parse Everything
-func buildSemester(app App)Semester{ 
+func buildSemester(app App)Semester{
   classes := []Course{}
-  courses := app.scrapeCourses() 
-  graders := make(map[string]string)
+  courses := app.scrapeCourses()
   for l,c := range courses{
     fmt.Println(c)
     course := Course{
@@ -124,16 +123,10 @@ func buildSemester(app App)Semester{
     }
     course.Assignments = buildAssignments(app,l)
     classes = append(classes,course)
-
-    tas := app.scrapeTAs(l)
-    for _,ta := range tas{
-      graders[ta]=l
-    }
   }
-  writeTAs(graders)
   return Semester{Courses: classes}
 }
- 
+
 //get the assignment info
 func buildAssignments(app App, courseID string)[]Assignment{
   assignments := []Assignment{}
