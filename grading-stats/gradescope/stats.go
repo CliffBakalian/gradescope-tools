@@ -3,7 +3,6 @@ package gradescope
 import (
   "strings"
   "strconv"
-  "fmt"
 )
 
 
@@ -115,7 +114,6 @@ func buildSemester(app App)Semester{
   classes := []Course{}
   courses := app.scrapeCourses()
   for l,c := range courses{
-    fmt.Println(c)
     course := Course{
       Name: c,
       Assignments: []Assignment{},
@@ -132,10 +130,9 @@ func buildAssignments(app App, courseID string)[]Assignment{
   assignments := []Assignment{}
   links,subs := app.scrapeAssignments(courseID)
   for l,a := range links{
-    fmt.Println(a)
     assignment := Assignment{
       Name: a,
-      Submissions: subs[a],
+      Submissions: subs[l],
       Link: l,
       Questions: []Question{},
     }
