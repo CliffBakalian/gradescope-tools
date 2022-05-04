@@ -39,6 +39,10 @@ type Submission struct {
   late Time
 }
 
+const (
+  max_tokens = 6
+)
+
 //Go through the csv file and make a list of grade structs
 //where each struct has name, uid, grade, and time
 func parseGradesFile(filename string) map[string]Submission{
@@ -163,7 +167,7 @@ func WriteGrades(submissions map[string]Submission, tokens TokenList, assignName
     if _,exists:= studentIDs[uid]; exists{
       tokenCount = tokens.Students[studentIDs[uid]].Tokens
     }
-    if tokenCount > 6{
+    if tokenCount > max_tokens{
       log.Print(submission.lname)
       line = append(line,"0.00")
     }else{
