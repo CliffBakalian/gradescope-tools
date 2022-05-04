@@ -170,7 +170,7 @@ func (app *App) getAssignments(courseID string) map[string]string{
 func grade(courseID string, assignID string, app App){
   app.downloadGrades(courseID,assignID)
   submissions := parseGradesFile(assignID+".csv")
-  tokenList := readExtensions()
+  tokenList := readTokenExtensions()
   updatedTokens := updateExtensions(submissions, tokenList, assignID)
   writeExtensions(updatedTokens)
 }
@@ -210,18 +210,44 @@ func getCourseID() string{
   return course
 }
 
-func getAssignID() string{
+func getAssignID(extra string) string{
   var assignment string
-  fmt.Print("Assignment ID: ")
+  fmt.Print("Assignment ID "+extra+": ")
   fmt.Scanln(&assignment)
   return assignment
 }
 
 func getCourseInfo() (string,string){
-  return getCourseID(),getAssignID()
+  return getCourseID(),getAssignID("")
 }
 
-func Gradescope(interactive bool,course string, assignment string, email string, password string) {
+func doItAll(course string, assignment string, app App, ass map[string]string){
+
+  fmt.Printf("Getting grades...\n")
+  app.downloadGrades(course, assignment)
+
+  fmt.Printf("Parsing grades...\n")
+  submissions := parseGradesFile(assignment+".csv")
+
+  fmt.Printf("Storing grades...\n")
+  os.Rename(assignment+".csv",strings.ReplaceAll(ass[assignment], " ", "_")+".csv")
+
+  fmt.Printf("Getting extensions...\n")
+  tokenList := readTokenExtensions()
+
+  fmt.Printf("updating extensions...\n")
+  updatedTokens := updateExtensions(submissions, tokenList, assignment)
+
+  fmt.Printf("Writing extensions...\n")
+  writeExtensions(updatedTokens)
+
+  fmt.Printf("Writing results...\n")
+  WriteGrades(submissions,updatedTokens,ass[assignment])
+
+  fmt.Printf("Done :)\n")
+}
+
+func Gradescope(interactive bool,course string, assignment string, email string, password string, merge bool) {
   jar, _ := cookiejar.New(nil)
 
   app := App{
@@ -239,36 +265,19 @@ func Gradescope(interactive bool,course string, assignment string, email string,
     startRepl(app)
   }else{
 
-  if course == ""{
-    course = getCourseID()
-  }
-  if assignment == ""{
-    assignment = getAssignID()
-  }
-
-  //need to add more interaction, rn getAssignments is useless
-  ass := app.getAssignments(course)
-  fmt.Print(ass)
-
-  fmt.Printf("Getting grades...\n")
-  app.downloadGrades(course, assignment)
-
-  fmt.Printf("Parsing grades...\n")
-  submissions := parseGradesFile(assignment+".csv")
-
-  fmt.Printf("Storing grades...\n")
-  os.Rename(assignment+".csv",strings.ReplaceAll(ass[assignment], " ", "_")+".csv")
-
-  fmt.Printf("Getting extensions...\n")
-  tokenList := readExtensions()
-  fmt.Printf("updating extensions...\n")
-  updatedTokens := updateExtensions(submissions, tokenList, assignment)
-  fmt.Printf("Writing extensions...\n")
-  writeExtensions(updatedTokens)
-  fmt.Printf("Writing results...\n")
-  //TODO need to then write modified grades based off tokens 
-  //grades.WriteGrades()
-
-  fmt.Printf("Done :)\n")
+    if course == ""{
+      course = getCourseID()
+    }
+    if assignment == ""{
+      assignment = getAssignID("")
+    }
+    ass := app.getAssignments(course)
+    doItAll(course,assignment,app,ass)
+    if merge {
+      assignment2 := getAssignID("(2)")
+      doItAll(course,assignment2,app,ass)
+      
+      MergeGrades(ass[assignment]+"-grades.csv", ass[assignment2]+"-grades.csv")
+    }
   }
 }

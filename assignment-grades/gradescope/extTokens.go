@@ -26,7 +26,7 @@ type Student struct{
   AssignTokens []int `json:"assignTokens`
 }
 
-func readExtensions() TokenList{
+func readTokenExtensions() TokenList{
   jsonFile, err := os.Open("tokens.json")
   if err != nil {
     log.Println("Cannot open tokens.json. ",err)
@@ -72,7 +72,7 @@ func writeExtensions(tokens TokenList){
 }
 
 //update the number of tokens people have
-func updateExtensions(submissions []Submission, tokens TokenList, assignID string) TokenList{
+func updateExtensions(submissions map[string]Submission, tokens TokenList, assignID string) TokenList{
   peopleLen := len(tokens.Students)
   for _, submission:= range submissions{
     //no need to do anything if tokens don't need to be updated

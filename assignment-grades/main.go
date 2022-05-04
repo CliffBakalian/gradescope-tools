@@ -12,8 +12,9 @@ func main() {
   assignment_id := flag.String("assignment","","The assignment ID")
   email := flag.String("email","cliffbakalian@gmail.com","login email")
   password := flag.String("password","","please never use but helpful for scripting purposes")
+  merge := flag.Bool("merge",false,"If you want to merge to assignments. Really no need for this")
 
   flag.Parse()
 
-  gradescope.Gradescope(*interactive, *course_id, *assignment_id, *email, *password)
+  gradescope.Gradescope(*interactive, *course_id, *assignment_id, *email, *password, *merge)
 }

@@ -153,7 +153,9 @@ func updateTAs(courseID string, app App)[]string{
   tas := app.scrapeTAs(courseID)
   graders := make(map[string]map[string]string)
   for _,ta := range tas{
-    graders[ta][courseID] = ""
+    temp := make(map[string]string)
+    temp[courseID] = ""
+    graders[ta] = temp
   }
   writeTAs(graders)
   return tas

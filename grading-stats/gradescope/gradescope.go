@@ -50,6 +50,7 @@ func getAssignID() string{
 func GetGraders(courseID string,app App)[]string{
   //try reading from file
   graders, err := readTAs(courseID)
+  fmt.Println(graders)
   if err != nil || len(graders) == 0{
     //scrap from gradescope ans store to file
     return updateTAs(courseID, app) 

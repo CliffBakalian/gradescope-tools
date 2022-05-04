@@ -3,6 +3,7 @@ package gradescope
 import (
   "strings"
   "strconv"
+  "fmt"
 )
 
 
@@ -185,6 +186,7 @@ func countDigits(i int)int{
 //pretty prints the stats
 func print_stats(graders []string,stats map[string]map[string]int)string{
   //get question names
+  fmt.Println(graders)
   max_question_len := 0
   questions := make([]string, len(stats))
   i := 0
