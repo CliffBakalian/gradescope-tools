@@ -7,6 +7,7 @@ import (
   "github.com/PuerkitoBio/goquery"
 )
 
+//return a ID list -> name for courses
 func (app *App) scrapeCourses() map[string]string{
   coursesURL:= baseURL
   client := app.Client
@@ -42,11 +43,13 @@ func (app *App) scrapeCourses() map[string]string{
   return courses
 }
 
+// return course name from ID
 func (app *App) scrapeCourseName(courseID string) string{
   names := app.scrapeCourses()
   return names[courseID]
 }
 
+// return assignment name from ID
 func (app *App) scrapeAssignmentName(courseID string,assignmentID string)(string,int){
   names,subs := app.scrapeAssignments(courseID)
   return names[assignmentID],subs[assignmentID]

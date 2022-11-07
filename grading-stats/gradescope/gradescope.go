@@ -95,7 +95,7 @@ func Gradescope(interactive bool,course string, assignment string, email string,
       course = getCourseID()
     }
     if assignment == ""{
-      course = getAssignID()
+      assignment = getAssignID()
     }
   }
   var stats map[string]map[string]int
@@ -113,6 +113,8 @@ func Gradescope(interactive bool,course string, assignment string, email string,
 
   graders := GetGraders(course, app)
 
-  rendered_stats := print_stats(graders,stats)
-  fmt.Println(rendered_stats)
+  //rendered_stats := print_stats(graders,stats)
+  print_stats(graders,stats)
+  write_stats(course,assignment,semester)
+  //fmt.Println(rendered_stats)
 }

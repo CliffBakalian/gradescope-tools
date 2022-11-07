@@ -3,9 +3,11 @@ package gradescope
 import (
   "strings"
   "strconv"
+  "log"
   "fmt"
+  "encoding/json"
+  "io/ioutil"
 )
-
 
 //get the states for an assignment
 func GetStats(semester Semester, courseID string, assignmentID string)(map[string]map[string]int, int){
@@ -233,4 +235,27 @@ func print_stats(graders []string,stats map[string]map[string]int)string{
     rendered = rendered + line
   }
   return rendered
+}
+
+func write_stats(courseID string, assignID string,semester Semester   ){
+  for _,course := range semester.Courses{
+    fmt.Println(course.Link)
+    if course.Link == courseID{
+      assignments := course.Assignments
+      for _,assignment := range assignments{
+        fmt.Println(assignment.Link)
+        if assignment.Link == assignID{
+          res,err := json.Marshal(assignment)
+          if err != nil {
+            log.Fatal(err)
+          }
+
+          err = ioutil.WriteFile(assignID+".json", res, 0644)
+          if err != nil {
+            log.Fatal(err)
+          }
+        }
+      }
+    }
+  }
 }
