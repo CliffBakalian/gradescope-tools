@@ -74,6 +74,7 @@ grading-stats -course XXXXXX -assignment YYYYYYY
 ```
 
 ### Printing to stdout
+
 If you don't want to render the csv yourself, you can pass in the '-print' flag and it will print out a rendered table to stdout.
 
 For example to pretty print a table for a single assignment
