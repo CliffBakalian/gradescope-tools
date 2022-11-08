@@ -2,6 +2,7 @@ package gradescope
 
 import (
   "fmt"
+  "log"
   "net/http"
   "net/http/cookiejar"
 
@@ -67,14 +68,6 @@ func checkCreds(email string,password string)(string,string){
   return email,password
 }
 
-// func updateCourse(courseID course){
-// 
-// }
-// 
-// func updateCourse(courseID string, assignID string){
-// 
-// }
-
 // need 6 options
 // cache is false
 // update everything - all
@@ -86,7 +79,7 @@ func checkCreds(email string,password string)(string,string){
 // write single course 
 // write single assignment
 
-func Gradescope(interactive bool,course string, assignment string, email string, password string, all bool, cache bool) {
+func Gradescope(interactive bool,course string, assignment string, email string, password string, print_flag bool, update bool) {
   jar, _ := cookiejar.New(nil)
   app := App{
     Client: &http.Client{Jar: jar},
@@ -97,14 +90,14 @@ func Gradescope(interactive bool,course string, assignment string, email string,
 
 
   if interactive { //redo this, so don't do anything
-    fmt.Println("Not inplemented yet")
+    log.Println("Not inplemented yet")
   }else{
     var stats map[string]map[string]int
     var val int
 
-    if !cache {              // update the stuff
+    if update {              // update the stuff
       if course == "" {           // update it all 
-        fmt.Println("Update it all")
+        log.Println("Update it all")
         semester = buildSemester(app)
         tas := buildTAFile(app,semester)
         writeTAs(tas)
@@ -116,21 +109,21 @@ func Gradescope(interactive bool,course string, assignment string, email string,
         }
 
         if assignment == ""{  // update entire course
-          fmt.Println("Update course")
+          log.Println("Update course")
           for _,course := range semester.Courses{
             for _,assign := range course.Assignments{
               _,val = updateAssignStats(semester,course.Link,assign.Link,buildQuestions(app,course.Link,assign.Link))
               if val != -1{ //the assignment or course was not found
-                fmt.Println("Error updating")  
+                log.Println("Error updating")  
               }
             }
           }
         }else{                      // update single assignment
-          fmt.Println("Update assignment")
+          log.Println("Update assignment")
           // this will also write the file too
           _,val = updateAssignStats(semester,course,assignment,buildQuestions(app,course,assignment))
           if val != -1{ //the assignment or course was not found
-            fmt.Println("Error updating")  
+            log.Println("Error updating")  
           }
         }
       }
@@ -141,31 +134,43 @@ func Gradescope(interactive bool,course string, assignment string, email string,
       }
 
       if course == "" {           // write it all
-        fmt.Println("Write it all")  
+        log.Println("Write it all")  
         for _,course := range semester.Courses{
           graders := GetGraders(course.Link, app)
           for _,assign := range course.Assignments{
             stats,_ = GetStats(semester,course.Link,assign.Link)
             csv_stats(assign.Link,graders,stats)
+            if print_flag {
+              rendered:= print_stats(graders,stats)
+              fmt.Println(rendered)
+            }
           }
         }
 
       }else if assignment == ""{  // write entire course
-        fmt.Println("Write course")  
+        log.Println("Write course")  
         graders := GetGraders(course, app)
         for _,c:= range semester.Courses{
           if c.Link == course{
             for _,assign := range c.Assignments{
               stats,_ = GetStats(semester,course,assign.Link)
               csv_stats(assign.Link,graders,stats)
+              if print_flag {
+                rendered:= print_stats(graders,stats)
+                fmt.Println(rendered)
+              }
             }
           }
         }
       }else{                      // write single assignment
-        fmt.Println("Write assignment")  
+        log.Println("Write assignment")  
         graders := GetGraders(course, app)
         stats,_ = GetStats(semester,course,assignment)
         csv_stats(assignment,graders,stats)
+        if print_flag {
+          rendered:= print_stats(graders,stats)
+          fmt.Println(rendered)
+        }
       }
     }
   }
