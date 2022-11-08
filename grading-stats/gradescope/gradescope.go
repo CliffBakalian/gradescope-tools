@@ -50,7 +50,6 @@ func getAssignID() string{
 func GetGraders(courseID string,app App)[]string{
   //try reading from file
   graders, err := readTAs(courseID)
-  fmt.Println(graders)
   if err != nil || len(graders) == 0{
     //scrap from gradescope ans store to file
     return updateTAs(courseID, app) 
@@ -68,6 +67,25 @@ func checkCreds(email string,password string)(string,string){
   return email,password
 }
 
+// func updateCourse(courseID course){
+// 
+// }
+// 
+// func updateCourse(courseID string, assignID string){
+// 
+// }
+
+// need 6 options
+// cache is false
+// update everything - all
+// update single course 
+// update single assignment
+
+// cache is true
+// write everything
+// write single course 
+// write single assignment
+
 func Gradescope(interactive bool,course string, assignment string, email string, password string, all bool, cache bool) {
   jar, _ := cookiejar.New(nil)
   app := App{
@@ -77,44 +95,90 @@ func Gradescope(interactive bool,course string, assignment string, email string,
   email,password = checkCreds(email,password)
   app.login(email,password)
 
-  semester,err := readCourses()
-  if err != nil{
-    semester = Semester{Courses:[]Course{}}
-  }
 
-  if interactive {
-    course = getCourseID()
-    assignment = getAssignID()
-  }else if all && !cache{ //can't update and read from cache
-    semester = buildSemester(app)
-    tas := buildTAFile(app,semester)
-    writeTAs(tas)
-    writeCourses(semester)
+  if interactive { //redo this, so don't do anything
+    fmt.Println("Not inplemented yet")
   }else{
-    if course == ""{
-      course = getCourseID()
-    }
-    if assignment == ""{
-      assignment = getAssignID()
-    }
-  }
-  var stats map[string]map[string]int
-  var val int
-  if cache{
-    stats,val = GetStats(semester,course,assignment)
-  }else{
-    stats,val = updateAssignStats(semester,course,assignment,buildQuestions(app,course,assignment))
-  }
-  if val != -1{ //the assignment or course was not found
-    updateAssignment(app,semester,course,assignment)
-    semester,_ := readCourses()
-    stats,_ = GetStats(semester,course,assignment)
-  }
+    var stats map[string]map[string]int
+    var val int
 
-  graders := GetGraders(course, app)
+    if !cache {              // update the stuff
+      if course == "" {           // update it all 
+        fmt.Println("Update it all")
+        semester = buildSemester(app)
+        tas := buildTAFile(app,semester)
+        writeTAs(tas)
+        writeCourses(semester)
+      }else{
+        semester,err := readCourses() //get existing data from cache
+        if err != nil{
+          semester = Semester{Courses:[]Course{}}
+        }
+
+        if assignment == ""{  // update entire course
+          fmt.Println("Update course")
+          for _,course := range semester.Courses{
+            for _,assign := range course.Assignments{
+              _,val = updateAssignStats(semester,course.Link,assign.Link,buildQuestions(app,course.Link,assign.Link))
+              if val != -1{ //the assignment or course was not found
+                fmt.Println("Error updating")  
+              }
+            }
+          }
+        }else{                      // update single assignment
+          fmt.Println("Update assignment")
+          // this will also write the file too
+          _,val = updateAssignStats(semester,course,assignment,buildQuestions(app,course,assignment))
+          if val != -1{ //the assignment or course was not found
+            fmt.Println("Error updating")  
+          }
+        }
+      }
+    }else{ // write the stuff
+      semester,err := readCourses() //get information from cache
+      if err != nil{
+        semester = Semester{Courses:[]Course{}}
+      }
+
+      if course == "" {           // write it all
+        fmt.Println("Write it all")  
+        for _,course := range semester.Courses{
+          graders := GetGraders(course.Link, app)
+          for _,assign := range course.Assignments{
+            stats,_ = GetStats(semester,course.Link,assign.Link)
+            csv_stats(assign.Link,graders,stats)
+          }
+        }
+
+      }else if assignment == ""{  // write entire course
+        fmt.Println("Write course")  
+        graders := GetGraders(course, app)
+        for _,c:= range semester.Courses{
+          if c.Link == course{
+            for _,assign := range c.Assignments{
+              stats,_ = GetStats(semester,course,assign.Link)
+              csv_stats(assign.Link,graders,stats)
+            }
+          }
+        }
+      }else{                      // write single assignment
+        fmt.Println("Write assignment")  
+        graders := GetGraders(course, app)
+        stats,_ = GetStats(semester,course,assignment)
+        csv_stats(assignment,graders,stats)
+      }
+    }
+  }
 
   //rendered_stats := print_stats(graders,stats)
-  print_stats(graders,stats)
-  write_stats(course,assignment,semester)
+  //print_stats(graders,stats)
+  //for _,c:= range semester.Courses{
+  //  graders := GetGraders(course, app)
+  //  for _,a := range c.Assignments {
+  //    csv_stats(a.Link,graders,stats)
+  //  }
+  //}
+  //csv_stats(assignment,graders,stats)
+  //write_stats(course,assignment,semester)
   //fmt.Println(rendered_stats)
 }

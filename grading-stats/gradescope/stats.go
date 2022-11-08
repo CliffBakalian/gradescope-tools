@@ -3,8 +3,8 @@ package gradescope
 import (
   "strings"
   "strconv"
+  "os"
   "log"
-  "fmt"
   "encoding/json"
   "io/ioutil"
 )
@@ -188,7 +188,7 @@ func countDigits(i int)int{
 //pretty prints the stats
 func print_stats(graders []string,stats map[string]map[string]int)string{
   //get question names
-  fmt.Println(graders)
+  //fmt.Println(graders)
   max_question_len := 0
   questions := make([]string, len(stats))
   i := 0
@@ -237,13 +237,37 @@ func print_stats(graders []string,stats map[string]map[string]int)string{
   return rendered
 }
 
+// list of grader names, question name to grader name to number
+func csv_stats(assignID string, graders []string, stats map[string]map[string]int){
+  f, err := os.Create(assignID+".csv")
+  if err != nil {
+    log.Fatal(err)
+  }
+  // close the file with defer
+  defer f.Close()
+
+  header := "question"
+  for _,grader:= range(graders){
+    header +=","+grader
+  }
+  header += "\n"
+  f.Write([]byte(header))
+  for question,count:= range stats{
+    line := question
+    for _,grader:= range(graders){
+      c := count[grader]
+      line += "," + strconv.Itoa(c)
+    }
+    line += "\n"
+    f.Write([]byte(line))
+  }
+   
+}
 func write_stats(courseID string, assignID string,semester Semester   ){
   for _,course := range semester.Courses{
-    fmt.Println(course.Link)
     if course.Link == courseID{
       assignments := course.Assignments
       for _,assignment := range assignments{
-        fmt.Println(assignment.Link)
         if assignment.Link == assignID{
           res,err := json.Marshal(assignment)
           if err != nil {
