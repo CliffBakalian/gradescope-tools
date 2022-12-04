@@ -116,8 +116,10 @@ func readTAs(course string) ([]string, error){
 }
 
 //write tas to the end. I don't want to rewrite because this file should be manually created. This is only for the case that the file got corrupted. 
+// ------------------------------------------
+// OK don't do above. Just rewrite them all. Shouldn't matter too much
 func writeTAs(tas map[string]map[string]string,){
-  f,err := os.OpenFile(graderFile,os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+  f,err := os.OpenFile(graderFile,os.O_CREATE|os.O_WRONLY, 0644)
   if err != nil {
     log.Fatal(err)
   }
@@ -160,35 +162,3 @@ func updateTAs(courseID string, app App)[]string{
   writeTAs(graders)
   return tas
 }
-
-/*
-func writeAssignment(courseID string, assignment Assignment, semester Semester){ 
-  for _,course := range semester.Courses{
-    if course.Link == courseID{
-      course.Assignments = append(course.Assignments,assignment)
-      break
-    }
-  }
-  writeCourses(semester)
-}
-
-func writeGrading(courseID string, assignmentID string, questionID string, graders []Graders, semester Semester){
-  for _,course := range semester.Courses{
-    if course.Link == courseID{
-      assignments := course.Assignments
-      for _,assignment := range assignments{
-        if assignment.Link == assignmentID{
-          questions := assignment.Questions
-          for _,question := range questions{
-            if question.Link == questionID{
-              question.Graded = graders
-              writeCourses(semester)
-              return
-            }
-          }
-        }
-      }
-    }
-  }
-}
-*/

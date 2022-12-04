@@ -174,16 +174,4 @@ func Gradescope(interactive bool,course string, assignment string, email string,
       }
     }
   }
-
-  //rendered_stats := print_stats(graders,stats)
-  //print_stats(graders,stats)
-  //for _,c:= range semester.Courses{
-  //  graders := GetGraders(course, app)
-  //  for _,a := range c.Assignments {
-  //    csv_stats(a.Link,graders,stats)
-  //  }
-  //}
-  //csv_stats(assignment,graders,stats)
-  //write_stats(course,assignment,semester)
-  //fmt.Println(rendered_stats)
 }
