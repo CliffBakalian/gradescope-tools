@@ -15,8 +15,9 @@ func main() {
   pf := flag.Bool("print", false, "pretty print output to stdout")
   //partial := flag.Bool("partial", false, "update only those that are not graded")
   update := flag.Bool("update", false, "update the databse")
+  init := flag.Bool("Init", false, "Update everything and remake grader file")
 
   flag.Parse()
 
-  gradescope.Gradescope(*interactive, *course_id, *assignment_id, *email, *password, *pf, *update)
+  gradescope.Gradescope(*interactive, *course_id, *assignment_id, *email, *password, *pf, *update,*init)
 }

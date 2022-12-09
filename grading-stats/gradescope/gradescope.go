@@ -79,7 +79,7 @@ func checkCreds(email string,password string)(string,string){
 // write single course 
 // write single assignment
 
-func Gradescope(interactive bool,course string, assignment string, email string, password string, print_flag bool, update bool) {
+func Gradescope(interactive bool,course string, assignment string, email string, password string, print_flag bool, update bool, init bool) {
   jar, _ := cookiejar.New(nil)
   app := App{
     Client: &http.Client{Jar: jar},
@@ -95,12 +95,14 @@ func Gradescope(interactive bool,course string, assignment string, email string,
     var stats map[string]map[string]int
     var val int
 
-    if update {              // update the stuff
-      if course == "" {           // update it all 
+    if update || init {              // update the stuff
+      if course == "" || init {           // update it all 
         log.Println("Update it all")
         semester = buildSemester(app)
-        tas := buildTAFile(app,semester)
-        writeTAs(tas)
+        if init{
+          tas := buildTAFile(app,semester)
+          writeTAs(tas)
+        }
         writeCourses(semester)
       }else{
         semester,err := readCourses() //get existing data from cache
