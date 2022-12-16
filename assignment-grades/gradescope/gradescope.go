@@ -264,7 +264,18 @@ func Gradescope(interactive bool,course string, assignment string, email string,
   if interactive {
     startRepl(app)
   }else{
-
+    parseProjectGradesFile("grades.csv")
+    /*
+    // this works
+    a,b,c,d := getProjectData(project_info_file);
+    for _,h := range(a){
+      fmt.Printf("Name: %s\n",h)
+      fmt.Printf("link: %s\n",b[h])
+      fmt.Printf("Due Date: %d:%d:%d\n",c[h].year, c[h].month,c[h].day)
+      fmt.Printf("Percent: %f\n",d[h])
+    }
+    */
+/*
     if course == ""{
       course = getCourseID()
     }
@@ -279,5 +290,6 @@ func Gradescope(interactive bool,course string, assignment string, email string,
       
       MergeGrades(ass[assignment]+"-grades.csv", ass[assignment2]+"-grades.csv")
     }
+    */
   }
 }

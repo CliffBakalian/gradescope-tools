@@ -7,9 +7,9 @@ import (
   "encoding/csv"
   "regexp"
   "strconv"
-  "math"
+  "fmt"
 )
-
+/*
 type Time struct {
   hour int8
   minute int8
@@ -21,42 +21,49 @@ type Date struct {
   month int8
   day int8
 }
+*/
 
+// score can be an int since we don't give partial points on projects
 //store alternative scores with tokens
 type AltScore struct{
-  score float32
-  tokens int
+  //subdate Date //when they submitted, used to account for extentions
+  score int //score
+  tokens int //how many tokens for that score
 }
 
 type Assignment struct {
-  name string
-  points float32
-  score float32
-  percent float32
-  late Time
-  duedate Date
-  link string
-  assigntype string
-  alternative []AltScore
+  name string //name of assignment
+  points int //out of how many points (typically 100)
+  score int //score on record
+  percent float32 //percent of overall grade. does need to be float
+  late Time //how late they submitted
+  duedate Date //day it was due
+  link string //link to project
+  assigntype string //project type, could add others later
+  alternative []AltScore //list of possible scores they could have
 }
 
-type Student struct {
+type User struct {
   lname string
   fname string
   uid string
   email string
   section string
-  assignments = []Assignment
+  assignments []Assignment
 }
 
 const (
-  max_tokens = 5
+  //max_tokens = 5
   project_info_file = "projects.csv"
 )
 
 //Go though file that stores project data and get the link on gradescope and 
 //the due date for the project
-func getProjectData(filename string) (map[string]string,map[string]Date,map[string]float32){
+// should be in the format of
+//project name, link, due year, due month, due day,percents 
+
+//due date should be used to determine if they submitted late after extention
+func getProjectData(filename string) ([]string,map[string]string,map[string]Date,map[string]float32){
   f, err := os.Open(filename)
   if err != nil {
     log.Fatal("Failed to open csv file")
@@ -64,37 +71,42 @@ func getProjectData(filename string) (map[string]string,map[string]Date,map[stri
 
   defer f.Close()
 
-  links := make([string]string)
-  duedates := make([string]Date)
-  percents := make([string]float32)
+  //map project name to info
+  projects := []string{}
+  links := make(map[string]string)
+  duedates := make(map[string]Date)
+  percents := make(map[string]float32)
+
   csvReader := csv.NewReader(f)
   csvReader.FieldsPerRecord = -1
 
   for {
     project, err := csvReader.Read()
-    //no more students to go through
+    //no more projects to go through
     if err == io.EOF {
       break
     }
+    projects = append(projects,project[0])
     links[project[0]] = project[1]
-    y = project[2]
-    m = project[1]
-    d = project[0]
+    y,_ := strconv.Atoi(project[2])
+    m,_ := strconv.Atoi(project[3])
+    d,_ := strconv.Atoi(project[4])
     duedates[project[0]] = Date{
-      year:y,
-      month:m,
-      day:d,
+      year:uint16(y),
+      month:int8(m),
+      day:int8(d),
     }
   }
-  return links,duedates,percents   
+  return projects,links,duedates,percents   
 }
 
+/*
 //optimze student's score with tokens on projects
-func optimize(assignments []Assignment, percents [string]float32) []Assignment{
-  projects = []Assignments  
-  scores = map[string][]AltScore
+func optimize(assignments []Assignment, percents map[string]float32) []Assignment{
+  projects := []Assignment{}
+  scores := make(map[string][]AltScore)
   //add assignment to projects
-  for idx,assign := assignments{
+  for idx,assign := range assignments{
     if assign.assigntype == "Project"{
       projects = append(projects,assign)
       scores[assign.name] = assign.alternative
@@ -105,22 +117,22 @@ func optimize(assignments []Assignment, percents [string]float32) []Assignment{
   //score with 0 tokesn, score with 1 token, score with 2 tokens
   
   //possible = [(count,p1_score,p2_score,...pn_score)]
-  possible = make([][]float32)
+  possible := [][]float32{}
   //add at least one project to possible
-  p0alts = score[projects[0].name]
+  p0alts := scores[projects[0].name]
   for alt:= range p0alts{
-    p0 := make([]float32)
+    p0 := []float32{}
     p0 = append(alt.tokens,alt.score)
     possible = append(possible,p0)
   }
   
   //use to store new lists
-  temp := make([][]float32)
+  temp := [][]float32{}
 
   //now start adding the other projects
   for p := range projects[1:]{
     for lst:= range possible{
-      alts = score[p.name]
+      alts := scores[p.name]
       for alt:= range alts{
         //add the new project to the already existing lists
         count:= lst[0]
@@ -151,13 +163,14 @@ func optimize(assignments []Assignment, percents [string]float32) []Assignment{
   }
   return assignments
 }
+*/
 
 //Go through grade csv file and make a list of Students
-func parseGradesFile(filename string) []Student{
+func parseProjectGradesFile(filename string) []User{
   //links map project name to link on gradescope.com
   //duedates map project name to starting date
   //both are gotten from other file
-  links,duedates,percents = getProjectData(project_info_file)
+  _,links,duedates,_:= getProjectData(project_info_file) //name,percents missing
   f, err := os.Open(filename)
   if err != nil {
     log.Fatal("Failed to open csv file")
@@ -165,15 +178,16 @@ func parseGradesFile(filename string) []Student{
 
   defer f.Close()
 
-  students := make([]Student)
+  //return list of students
+  students := []User{}
 
   csvReader := csv.NewReader(f)
   csvReader.FieldsPerRecord = -1
 
   //get the time then date the assignmnet was submitted
   subtime_re := regexp.MustCompile(`(\d\d):(\d\d):(\d\d)`)
-  subdate_re := regexp.MustCompile(`(\d{4})-(\d{2})-(\d{2})`)
-  project_re := regexp.MustCompile(`Project \d+[a-z]?`)
+  //subdate_re := regexp.MustCompile(`(\d{4})-(\d{2})-(\d{2})`)
+  //project_re := regexp.MustCompile(`Project \d+[a-z]?`) 
   atype_re := regexp.MustCompile(`(Project|Lecture Quiz|Quiz|Exam)`)
   /*
   maxpoints_re := regexp.MustCompile(`- Max Points`)
@@ -183,20 +197,21 @@ func parseGradesFile(filename string) []Student{
 
   header,err := csvReader.Read()
 
-  //each assign has score, max points, submission time and lateness
-  //there is also a total lateness column, first name, latename, SID, email
-  //and section colum. Remove those and divide by 4 to get number of assigns
-  num_assigns := (len(header)-6)/4
-
   //if login failed, then len < 2
-  if err != nil || len(record) <2{
+  if err != nil || len(header) <2{
     f.Close()
     os.Remove(filename)
     log.Fatalln("Error parsing row. Make sure credentials correct",err)
   }
 
+  //each assign has score, max points, submission time and lateness
+  //there is also a total lateness column, first name, latename, SID, email
+  //and section colum. Remove those and divide by 4 to get number of assigns
+  num_assigns := (len(header)-6)/4
+  fmt.Printf("Num assigns: %d\n",num_assigns)
   //used to optimize score
-  optimze := false
+  optimize := false
+
   for {
     student, err := csvReader.Read()
     //no more students to go through
@@ -209,13 +224,13 @@ func parseGradesFile(filename string) []Student{
     userid := student[2]
     email := student[3]
     section := student[4]
-    assignments := make([]Assignments)
+    assignments := []Assignment{}
 
     // starting getting info for each assignmet
     offset_idx := 5 //starting after first name, last name, sid, email, sections
     assign_num := 0
     assign_idx := (assign_num*4)+offset_idx
-     
+
     for assign_num < num_assigns{
       //get info for assignment
       name := header[assign_idx] 
@@ -227,11 +242,12 @@ func parseGradesFile(filename string) []Student{
         continue 
       }
       duedate := duedates[name]
-      score := student[assign_idx]
-      points := student[assign_idx +1] //name, max points, submission time, late
-      subdate := subdate_re.FindStringSubmatch(student[assign_idx + 2])
+      score,_ := strconv.ParseInt(student[assign_idx],10,0)
+      //score, max points, submission time, late
+      points,_ := strconv.ParseInt(student[assign_idx +1],10,0)
+      //subdate := subdate_re.FindStringSubmatch(student[assign_idx + 2]) //not needed yet
       late := subtime_re.FindStringSubmatch(student[assign_idx + 3])
-      alts := make([]AltScore) 
+      alts := []AltScore{}
 
       latetime := Time{
           hour: int8(func(x int,y error)int{return x}(strconv.Atoi(late[1]))),
@@ -239,10 +255,20 @@ func parseGradesFile(filename string) []Student{
           seconds: int8(func(x int,y error)int{return x}(strconv.Atoi(late[3]))),
       }
       //if project and submission was late
-      if asigntype == "Project" && (latetime.hour>0 ||latetime.minute >0|| latetime.seconds>0){
+      if assigntype[0] == "Project" && (latetime.hour>0 ||latetime.minute >0|| latetime.seconds>0){
+        //fmt.Printf("%s %s: %s\n",firstName, lastName, name)
         //TODO look at submission scores for assignment
         // make list of Altscores
         //mark as someone to optimize
+        optimize = true
+
+        tokenscore := make([]int,3) //0 tokens, 1 token, 2 tokens used score
+        lastday := duedates[name] //last day to submit with no penalty
+
+        //last submission is x = hours/24 days late
+        //if date - x > duedate, they had an extension, change last-day
+          //lastday = 
+        //
         /*
         scraper algo:
           input: NAME, COURSE, ASSIGNMENT
@@ -266,37 +292,38 @@ func parseGradesFile(filename string) []Student{
       //make assignment
       assign := Assignment{
         name: name,
-        points: points,
-        score: score,
+        points: int(points),
+        score: int(score),
         late: latetime,
         duedate: duedate,
         link: links[name],
-        assigntype: assigntype,
+        assigntype: assigntype[0],
         alternative: alts,
       }
       //add to assignment lists
-      assignments = append(assign, assignments)
+      assignments = append(assignments,assign)
 
       //update things for the loop guard
       assign_num += 1
       assign_idx = (assign_num*4)+offset_idx
     }
-    
+
     if optimize{
-      assignments = optimze(assignments,percents) 
+      //assignments = optimze(assignments,percents) 
+      fmt.Printf("%s %s\n",firstName, lastName)
       optimize = false
     }
     //make student
-    student := Student{
+    s := User{
       fname: firstName,
-      lanem: lastName,
+      lname: lastName,
       uid: userid,
       email: email,
       section: section, 
       assignments: assignments,
     }
     //add student to list
-    students = append(student, students)
+    students = append(students,s)
   }
   return students 
 }
