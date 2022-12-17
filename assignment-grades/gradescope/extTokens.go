@@ -19,12 +19,6 @@ type TokenList struct{
   Students []Student `json:"students"`
 }
 
-type Student struct{
-  UID string `json:"UID"`
-  Tokens int `json:"tokens"`
-  Assignments []string `json:"assignments"`
-  AssignTokens []int `json:"assignTokens`
-}
 
 func readTokenExtensions() TokenList{
   jsonFile, err := os.Open("tokens.json")

@@ -16,28 +16,6 @@ var (
 )
 */
 
-type Time struct {
-  hour int8
-  minute int8
-  seconds int8
-}
-
-type Date struct {
-  year uint16
-  month int8
-  day int8
-}
-
-type Submission struct {
-  lname string
-  fname string
-  uid string
-  points float32
-  maxPoints float32
-  date Date
-  time Time
-  late Time
-}
 
 const (
   max_tokens = 6
