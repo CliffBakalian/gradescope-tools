@@ -1,7 +1,7 @@
 package gradescope
 
 type Time struct {
-  hour int8
+  hour int16
   minute int8
   seconds int8
 }

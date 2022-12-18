@@ -264,7 +264,7 @@ func Gradescope(interactive bool,course string, assignment string, email string,
   if interactive {
     startRepl(app)
   }else{
-    parseProjectGradesFile("grades.csv")
+    parseProjectGradesFile("grades.csv",app)
     /*
     // this works
     a,b,c,d := getProjectData(project_info_file);

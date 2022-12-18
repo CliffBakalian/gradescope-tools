@@ -67,12 +67,12 @@ func parseGradesFile(filename string) map[string]Submission{
       subtime := subtime_re.FindStringSubmatch(record[9])
       latetime := subtime_re.FindStringSubmatch(record[10])
       subTime = Time{
-        hour: int8(func(x int,y error)int{return x}(strconv.Atoi(subtime[1]))),
+        hour: int16(func(x int,y error)int{return x}(strconv.Atoi(subtime[1]))),
         minute: int8(func(x int,y error)int{return x}(strconv.Atoi(subtime[2]))),
         seconds: int8(func(x int,y error)int{return x}(strconv.Atoi(subtime[3]))),
       }
       lateTime = Time{
-        hour: int8(func(x int,y error)int{return x}(strconv.Atoi(latetime[1]))),
+        hour: int16(func(x int,y error)int{return x}(strconv.Atoi(latetime[1]))),
         minute: int8(func(x int,y error)int{return x}(strconv.Atoi(latetime[2]))),
         seconds: int8(func(x int,y error)int{return x}(strconv.Atoi(latetime[3]))),
       }

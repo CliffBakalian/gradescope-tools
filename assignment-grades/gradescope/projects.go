@@ -124,7 +124,7 @@ func optimize(assignments []Assignment, percents map[string]float32) []Assignmen
 */
 
 //Go through grade csv file and make a list of Students
-func parseProjectGradesFile(filename string) []User{
+func parseProjectGradesFile(filename string, client App) []User{
   //links map project name to link on gradescope.com
   //duedates map project name to starting date
   //both are gotten from other file
@@ -143,7 +143,7 @@ func parseProjectGradesFile(filename string) []User{
   csvReader.FieldsPerRecord = -1
 
   //get the time then date the assignmnet was submitted
-  subtime_re := regexp.MustCompile(`(\d\d):(\d\d):(\d\d)`)
+  subtime_re := regexp.MustCompile(`(\d+):(\d\d):(\d\d)`)
   //subdate_re := regexp.MustCompile(`(\d{4})-(\d{2})-(\d{2})`)
   //project_re := regexp.MustCompile(`Project \d+[a-z]?`) 
   atype_re := regexp.MustCompile(`(Project|Lecture Quiz|Quiz|Exam)`)
@@ -166,7 +166,7 @@ func parseProjectGradesFile(filename string) []User{
   //there is also a total lateness column, first name, latename, SID, email
   //and section colum. Remove those and divide by 4 to get number of assigns
   num_assigns := (len(header)-6)/4
-  fmt.Printf("Num assigns: %d\n",num_assigns)
+  //fmt.Printf("Num assigns: %d\n",num_assigns)
   //used to optimize score
   optimize := false
 
@@ -189,6 +189,10 @@ func parseProjectGradesFile(filename string) []User{
     assign_num := 0
     assign_idx := (assign_num*4)+offset_idx
 
+    //for debug
+    count := 0 //token count
+    numtoks := 0
+
     for assign_num < num_assigns{
       //get info for assignment
       name := header[assign_idx] 
@@ -208,20 +212,34 @@ func parseProjectGradesFile(filename string) []User{
       alts := []AltScore{}
 
       latetime := Time{
-          hour: int8(func(x int,y error)int{return x}(strconv.Atoi(late[1]))),
+          hour: int16(func(x int,y error)int{return x}(strconv.Atoi(late[1]))),
           minute: int8(func(x int,y error)int{return x}(strconv.Atoi(late[2]))),
           seconds: int8(func(x int,y error)int{return x}(strconv.Atoi(late[3]))),
       }
       //if project and submission was late
       if assigntype[0] == "Project" && (latetime.hour>0 ||latetime.minute >0|| latetime.seconds>0){
-        //fmt.Printf("%s %s: %s\n",firstName, lastName, name)
+        if (name != "Project 0 - Setup" && !(latetime.hour == 0 && latetime.minute < 4)){
+          if (latetime.hour>23){
+            count = count + int(latetime.hour/12) + 1
+          }else if(latetime.hour>11){
+            count = count + 2
+          }else{ 
+            count = count + 1
+          }
+        }
+
+        //TODO make more efficient by not getting the document if I have already got the document
+        doc := client.gradesTable(baseURL+"/courses/417679/assignments/"+links[name]) //TODO do not hardcode this
+        l := getSubLink(doc,email) 
+        if (count > 5){
         //TODO look at submission scores for assignment
         // make list of Altscores
         //mark as someone to optimize
         optimize = true
-
-        tokenscore := make([]int,3) //0 tokens, 1 token, 2 tokens used score
-        lastday := duedates[name] //last day to submit with no penalty
+        numtoks = count
+        }
+        //tokenscore := make([]int,3) //0 tokens, 1 token, 2 tokens used score
+        //lastday := duedates[name] //last day to submit with no penalty
 
         //last submission is x = hours/24 days late
         //if date - x > duedate, they had an extension, change last-day
@@ -268,7 +286,7 @@ func parseProjectGradesFile(filename string) []User{
 
     if optimize{
       //assignments = optimze(assignments,percents) 
-      fmt.Printf("%s %s\n",firstName, lastName)
+      fmt.Printf("%s %s: %d\n",firstName, lastName,numtoks)
       optimize = false
     }
     //make student
