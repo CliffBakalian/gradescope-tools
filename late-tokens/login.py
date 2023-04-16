@@ -1,27 +1,19 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
+#from selenium.webdriver.common.keys import Keys
 
 from dotenv import dotenv_values
 
 import logging
+from utils import setup, checkPage
+
+from scraper import scrapeAssignments, scrapeCourses
 
 config = dotenv_values(".env")
 
-def setup():
-  try:
-    fireFoxOptions = webdriver.firefox.options.Options()
-    fireFoxOptions.add_argument("--headless")
-    browser = webdriver.Firefox(options=fireFoxOptions)
-    logging.info("Setup Successful")
-    return browser
-  except Exception as e:
-    browser.close()
-    logging.error("Setup Failed")
-    logging.error(e)
-
 def login(browser):
   try: 
+    #find the email and password parts of the login form on graedscope's site
     browser.get('https://www.gradescope.com/login')
     username=browser.find_element("id","session_email");
     password=browser.find_element("id","session_password");
@@ -29,11 +21,14 @@ def login(browser):
 
     username.send_keys(config["USERNAME"]);
     password.send_keys(config["PASSWORD"]);
-    login.click()
+    login.click() # login
 
+    '''
+    make sure you actually logged in. It will redirect you if your credentials
+    are wrong.
+    '''
     expected = "https://www.gradescope.com/account" 
-    actual = browser.current_url;
-    if actual == expected:
+    if checkPage(browser,expected):
       logging.info("Login Successful")
       return browser
     else:
@@ -41,24 +36,36 @@ def login(browser):
       logging.error("Login Failed: incorrect credentials)")
   except Exception as e:
     browser.close()
-    logging.error("Login failed due to Selenium")
+    logging.error("Could not find elements on Login page or gradescope is down")
     logging.error(e)
 
-def getCourse(browser):
-  try:
-    target = "https://www.gradescope.com/course/"+COURSE
-    browser.get(target)
-    actual = browser.current_url;
-    if actual == target:
-      logging.info("Course Found")
-      return browser
-    else:
-      browser.close()
-      logging.error("Course Not Found: check course ID")
-  except Exception as e:
+
+def getAssignment(browser,assignment,course=None):
+  if not course:
+    base = browser.current_url
+  else:
+    base = "https://www.gradescope.com/courses/"+course
+  expected = base + "/assignments/" + assignment
+  browser.get(expected)
+  landing_pages = ["submissions", "grade", "review_grades", "submission_batches", "rubric/edit", "outline/edit"]
+  if reduce(lambda a,b: a or checkPage(browser,b),[True] + landing_pages):
+    logging.info("Assignments Page Found")
+    return browser
+  else:
     browser.close()
-    logging.error("Course lookup failed due to Selenium")
-    logging.error(e)
+    logging.error("Assignments Page Not Found: check course ID")
+
+'''
+start by setting up a logger to make sure everything runs smoothly
+then we setup the driver and login to gradescope
+'''
 
 logging.basicConfig(filename='debug.log', level=logging.INFO)
-login(setup())
+driver = login(setup())
+
+'''
+courses = scrapeCourses(driver)
+print(courses)
+assignments = scrapeAssignments(driver,str(config['COURSE']))
+print(assignments)
+'''
