@@ -25,6 +25,9 @@ def checkPage(browser,url):
     if actual == url:
       return True 
     else:
+      logging.error("check for " + url + " failed")
+      logging.error("actual" + actual)
+      logging.error("expected" + url)
       return False
   except Exception as e:
     browser.close()

@@ -1,13 +1,11 @@
+import logging
+import json
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-#from selenium.webdriver.common.keys import Keys
-
 from dotenv import dotenv_values
 
-import logging
 from utils import setup, checkPage
-
-from scraper import scrapeAssignments, scrapeCourses
+from scraper import scrapeAssignments, scrapeCourses, scrapeLatestSubmission, scrapeAllSubmissions
 
 config = dotenv_values(".env")
 
@@ -56,16 +54,55 @@ def getAssignment(browser,assignment,course=None):
     logging.error("Assignments Page Not Found: check course ID")
 
 '''
+this theoretically takes a course, goes through all of its assignments, 
+goes through all submissions for that assignment, and gets all submission 
+history and score of it all.
+returns a map of course -> assignment -> user -> scores
+then prints that to file
+'''
+def getItAll(driver):
+  #get the assignments
+  course = str(config['COURSE'])
+  assignments = scrapeAssignments(driver,course)
+  #get a list of (name,assignmentIDs)
+  assigns = {}
+  for name,link in assignments:
+    users = {}
+    assignment = link[-7:]
+    #get a list of (student, submissionIDs)
+    submissions = scrapeLatestSubmission(driver,course,assignment)
+    for name,link in submissions:
+      scores = {}
+      user = link[-9:]
+      # get a list of (time, score)
+      results = scrapeAllSubmissions(driver,course,assignment,user)
+      #map student name to (time,score)
+      scores[name] = results
+    users[name] = scores
+  assigns[course] = users
+
+  with open('results.json','w') as f:
+    json.dump(assigns,f)
+
+'''
 start by setting up a logger to make sure everything runs smoothly
-then we setup the driver and login to gradescope
+then we setup the driver and login to gradescope. Then get all data
 '''
 
 logging.basicConfig(filename='debug.log', level=logging.INFO)
 driver = login(setup())
+getItAll(driver)
 
 '''
+This all seems to work independently
+idk if it works together tho.
+
 courses = scrapeCourses(driver)
 print(courses)
 assignments = scrapeAssignments(driver,str(config['COURSE']))
 print(assignments)
+submissions = scrapeLatestSubmission(driver,str(config['COURSE']),str(config['TEST_ASSIGNMENT']))
+print(submissions)
+results = scrapeAllSubmissions(driver,str(config['COURSE']),str(config['TEST_ASSIGNMENT']),str(config['TEST_USER']))
+print(results)
 '''
