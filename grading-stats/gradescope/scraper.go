@@ -1,10 +1,13 @@
 package gradescope
 
 import (
+  "sort"
   "regexp"
   "log"
   "strconv"
   "github.com/PuerkitoBio/goquery"
+  "fmt"
+  "encoding/json"
 )
 
 //return a ID list -> name for courses
@@ -12,7 +15,6 @@ func (app *App) scrapeCourses() map[string]string{
   coursesURL:= baseURL
   client := app.Client
   courses := make(map[string]string)
-
   response, err := client.Get(coursesURL)
   if err != nil {
     log.Fatalln("Error getting assignments. ",err)
@@ -129,9 +131,83 @@ func (app *App) scrapeAssignments(courseID string) (map[string]string, map[strin
   return assignments,sub_count
 }
 
-//get the name of the questions and the link to the question 
+// gradescope changed their website. now they querry a json file and render that nicely
+//so I guess I have to query the json and get the info I want
+
 func (app *App) scrapeQuestions(courseID string, assignmentID string)map[string]string{
+  assignURL := baseURL+"/courses/"+courseID+"/assignments/"+ assignmentID+"/grade.json"
+  //fmt.Println(assignURL)
+  client := app.Client
+  questions := make(map[string][]float64)
+  parents := make(map[float64]bool)
+  ret := make(map[string]string)
+  resp, err := client.Get(assignURL)
+   if err != nil {
+      log.Fatal(err)
+   }
+   var jason map[string]any
+   err = json.NewDecoder(resp.Body).Decode(&jason)
+   if err != nil {
+      log.Fatal(err)
+   }
+  assigns := jason["assignments"].(map[string]any)
+  for k,_ := range assigns{
+    question := assigns[k].(map[string]any)["questions"].(map[string]any)
+    //fmt.Println(question)
+    for _,v := range question{
+      //fmt.Println(v)
+      //pid:= questions[k].(map[string]any)["parent_id"]
+      pid:= v.(map[string]any)["parent_id"]
+      qid:= v.(map[string]any)["id"].(float64)
+
+      switch pid.(type){
+        case nil:
+          key := strconv.FormatFloat(qid,'f',-1,64)
+          _,qid_included := parents[qid]
+          if !qid_included{
+            questions[key] = make([]float64,0)
+            parents[qid] = true
+          }
+        default:
+          key := strconv.FormatFloat(pid.(float64),'f',-1,64)
+          _,pid_included := parents[float64(pid.(float64))]
+          if !pid_included{
+            questions[key] = []float64{qid}
+            parents[float64(pid.(float64))] = true
+          }else{
+            questions[key] = append(questions[key],qid)
+            parents[float64(pid.(float64))] = true
+          }
+      }
+    }
+  }
+
+  keys := make([]string, 0, len(questions))
+  for k := range questions{
+      keys = append(keys, k)
+  }
+  sort.Strings(keys)
+  for idx1,key := range keys{
+    subprobs := questions[key]
+    if len(subprobs) == 0{
+      ret[strconv.Itoa(idx1 + 1)] = key
+    }else{
+      keys2 := make([]int, 0, len(subprobs))
+      for k := range subprobs{
+          keys2 = append(keys2, k)
+      }
+      sort.Ints(keys2)
+      for idx2,sp := range subprobs{
+        ret[strconv.Itoa(idx1+1)+ "." + strconv.Itoa(idx2+1)] = strconv.FormatFloat(sp,'f',-1,64)
+      }
+    }
+  }
+  return ret
+}
+//get the name of the questions and the link to the question 
+func (app *App) BadscrapeQuestionsOutDated(courseID string, assignmentID string)map[string]string{
   assignURL := baseURL+"/courses/"+courseID+"/assignments/"+ assignmentID+"/grade"
+  fmt.Println(assignURL)
   client := app.Client
   questions := make(map[string]string)
   response, err := client.Get(assignURL)
@@ -146,13 +222,22 @@ func (app *App) scrapeQuestions(courseID string, assignmentID string)map[string]
     log.Fatalln("Error getting questions body. ", err)
   }
 
+  fmt.Println("scraping questions")
+  //fmt.Println(document.Html())
   question_link_re := regexp.MustCompile(`questions\/(\d+)\/(grade|submissions)`)
-  document.Find("a.link-noUnderline").Each(func(i int, s*goquery.Selection) {
-    //get the link for the questions to obtain who graded who 
-    link, _:= s.Attr("href")
-    q_id := question_link_re.FindStringSubmatch(link)
-    //s.Text is the name of the class
-    questions[s.Text()] = q_id[1]
+  document.Find("div[data-react-class='GradingDashboard']").Each(func(i int, s*goquery.Selection) {
+    fmt.Println("Found main")
+    fmt.Println(s.Html())
+    s.Find("td").Each(func(i int, s*goquery.Selection) {
+      fmt.Println("Found table")
+      f := s.First()
+      fmt.Println(f.Text())
+      //get the link for the questions to obtain who graded who 
+      link, _:= f.Attr("href")
+      q_id := question_link_re.FindStringSubmatch(link)
+      //s.Text is the name of the class
+      questions[f.Text()] = q_id[1]
+    })
   })
   //techincally the previous find picks up both grading and submissions links
   //We only need to look at submissions here. 
