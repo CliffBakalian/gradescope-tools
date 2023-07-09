@@ -192,11 +192,11 @@ func (app *App) scrapeQuestions(courseID string, assignmentID string)map[string]
     if len(subprobs) == 0{
       ret[strconv.Itoa(idx1 + 1)] = key
     }else{
-      keys2 := make([]int, 0, len(subprobs))
-      for k := range subprobs{
+      keys2 := make([]float64, 0, len(subprobs))
+      for _,k := range subprobs{
           keys2 = append(keys2, k)
       }
-      sort.Ints(keys2)
+      sort.Float64s(keys2)
       for idx2,sp := range subprobs{
         ret[strconv.Itoa(idx1+1)+ "." + strconv.Itoa(idx2+1)] = strconv.FormatFloat(sp,'f',-1,64)
       }
