@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
+
 import logging
 import re
 import os
@@ -300,3 +301,19 @@ def cache_history(driver,course,assignment,update=False):
         f.write(str(time)+","+str(score)+"\n") 
       logging.info("Cached history for "+name)
   logging.info("Cached!")
+
+def get_all_submissions(driver,course,assignment,name,user):
+  if not os.path.exists(os.path.join(assignment,name+'.'+assignment)):
+    print("could not find cache")
+    student_file = os.path.join(assignment,name+"."+assignment)
+    ret = scrapeAllSubmissions(driver,course,assignment,user) 
+    with open(str(student_file),'w') as f:
+      for (time,score) in ret:
+        f.write(str(time)+","+str(score)+"\n") 
+    return ret
+  ret = []
+  with open(os.path.join(assignment,name+'.'+assignment)) as cache:
+    for line in cache:
+      info = line.split(",") 
+      ret.append((info[0],info[1]))
+  return ret

@@ -6,6 +6,15 @@ import logging
 Just some utility functions. 
 '''
 
+def get_driver():
+  config = dotenv_values(".env")
+  username = config["USERNAME"];
+  password = config["PASSWORD"];
+
+  logging.basicConfig(filename='debug.log', level=logging.INFO)
+  driver = login(setup(),username,password)
+  return driver
+
 def login(browser,uname,pword):
   try: 
     #find the email and password parts of the login form on graedscope's site
