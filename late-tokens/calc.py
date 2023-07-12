@@ -4,8 +4,8 @@ import re
 from datetime import datetime, timedelta
 from math import ceil
 
-from scraper import last_sub_cache, get_all_submissions, 
-from utils import get_driver()
+from scraper import last_sub_cache, get_all_submissions
+from utils import get_driver
 
 
 EDT = datetime(2023,3,12)
@@ -13,7 +13,6 @@ EDT = datetime(2023,3,12)
 
 TOKENS_ALLOWED = 3
 MAX_TOKEN_PER_ASSIGNMENT = -1
-
 
 def getHeaders(f):
   ret = {}
@@ -163,8 +162,9 @@ def get_non_token_info(row,headers,assignments):
 
 def list_to_hash(lst):
   ret = {}
-  for (name,link) in lst:
-    ret[name] = link
+  if lst != None:
+    for (name,link) in lst:
+      ret[name] = link
   return ret
 
 '''
@@ -176,7 +176,7 @@ return {assignment:score}
 
 TOKENS_ALLOWED = 3
 MAX_TOKEN_PER_ASSIGNMENT = -1
-def min_max_grades(histories,assign_info):
+def min_max_grades(histories,assign_info,flag=False):
   ret = {}
   assigns_to_check = []
   for name,scores in histories.items():
@@ -184,7 +184,7 @@ def min_max_grades(histories,assign_info):
       ret[name] = max(scores.values())
     else:
       assigns_to_check.append(name)
-  _,path = bfs(assigns_to_check,assigns_to_check,histories,assign_info,TOKENS_ALLOWED,{}) 
+  _,path = bfs(assigns_to_check,assigns_to_check,histories,assign_info,TOKENS_ALLOWED,{},flag) 
   final_score = -1
   for assignment,tokens in path.items():
     ret[assignment] = histories[assignment][tokens]
@@ -200,16 +200,20 @@ given {assignment: tokens}
 this is a bfs tree problem. start with 0 tokens, then x token per project
 return (score,{assignment: tokens})
 '''
-def bfs(assignments,visited,histories,assign_info,tokens,path):
+def bfs(assignments,visited,histories,assign_info,tokens,path,flag=False):
   ## calculater the path on the tree
   if tokens <= 0 or visited == []:
     score = 0
     for assignment in assignments:
       weight = assign_info[assignment]['weight']
       if assignment in path:
-        score += histories[assignment][path[assignment]] * weight
+        if assignment in histories and path[assignment] in histories[assignment]:
+          score += histories[assignment][path[assignment]] * weight
       else:
         score += histories[assignment][0] * weight
+        path[assignment] = 0
+        if(flag):
+          print(score)
     return score,path
         
   values = []
@@ -225,13 +229,18 @@ def bfs(assignments,visited,histories,assign_info,tokens,path):
         values.append(res)
       else:
         score = 0
-        for assignment in assignments:
-          weight = assign_info[assignment]['weight']
+        for asign in assignments:
+          weight = assign_info[asign]['weight']
           if assignment in path:
-            score += histories[assignment][path[assignment]] * weight
+            if asign in histories and asign in path and path[asign] in histories[asign]:
+              score += histories[asign][path[asign]] * weight
           else:
-            score += histories[assignment][0] * weight
-        return score,path
+            score += histories[asign][0] * weight
+            path[assignment] = 0
+            if(flag):
+              print(histories[asign][0])
+              print(score)
+        values.append((score,path))
   ret = {}
   final_score = -1
   for score,path in values:
@@ -264,4 +273,5 @@ def start(input_file):
 
 test_file = "330summer.csv"
 driver = get_driver()
+#driver = None
 start(test_file)
