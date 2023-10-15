@@ -1,6 +1,10 @@
 # Gradescope Grading Stats
 
-# installation 
+***Disclaimer: Gradescope has no API so this is a scraper. Sometimes Gradescope changes it's formatting. Just make an issue and I'll update it***
+
+***Now in Selenium since gradescope changed thier page to be dynamic***
+
+## installation 
 
 you can install this by running `go install github.com/cliffbakalian/gradescope-tools/grading-stats`  
 Note: make sure your $GOPATH is set. I beieve by default it is not. Assuming go is installed in `~/go`

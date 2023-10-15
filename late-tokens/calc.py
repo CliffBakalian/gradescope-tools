@@ -4,15 +4,34 @@ import re
 from datetime import datetime, timedelta
 from math import ceil
 
-from scraper import last_sub_cache, get_all_submissions
+from scraper import cache_history,last_sub_cache, get_all_submissions
 from utils import get_driver
 
 
 EDT = datetime(2023,3,12)
 
 
-TOKENS_ALLOWED = 3
+TOKENS_ALLOWED = 9
 MAX_TOKEN_PER_ASSIGNMENT = -1
+
+
+token_assignments = ['Project 1', 'Project 2', 'Project 3']
+non_token = ['Quiz 1', 'Quiz 2', 'Quiz 3', 'Quiz 4']
+non_token += ['Discussion 1', 'Discussion 5', 'Discussion 6', 'Discussion 7 Graded Assignment', 'Discussion 8 (code)','Discussion 8 (quiz)', 'Discussion 9']
+non_token += ['Exam 1', 'Exam 2']
+
+COURSE_ID = "545061"
+assign_ids = {"Project 1": "2929901", "Project 2": "2950793", "Project 3": "2961787"}
+
+ASSIGN_INFO = {"Project 1": {'due': datetime(2023,6,18,23,23,59,59), 
+                            'late': datetime(2023,6,20,23,23,59,59),
+                            'weight': .12},
+               "Project 2": {'due': datetime(2023,6,30,23,59,59), 
+                            'late': datetime(2023,7,2,23,59,59),
+                            'weight': .12},
+               "Project 3": {'due': datetime(2023,7,9,23,59,59), 
+                            'late': datetime(2023,7,11,23,59,59),
+                            'weight': .12}}
 
 def getHeaders(f):
   ret = {}
@@ -131,7 +150,13 @@ def get_token_info(row,headers,assignments):
   histories = {}
   for assignment in assignments:
     aid = assign_ids[assignment]
-    sub_cache = list_to_hash(last_sub_cache(aid))
+    lsb = last_sub_cache(aid)
+    if lsb == None:
+      print("could not find last_sub_cache")
+      cache_history(driver,COURSE_ID,aid,True)
+      sub_cache = list_to_hash(last_sub_cache(aid))
+    else:
+      sub_cache = list_to_hash(lsb)
     name = row[headers['First Name']] + " " + row[headers['Last Name']] 
     if name in sub_cache:
       user = sub_cache[name]
