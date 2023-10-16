@@ -1,2 +1,9 @@
 .assignments.json
 .graders.csv
+old
+__pycache__
+env
+debug.log
+.env
+geckodriver.log
+*.json

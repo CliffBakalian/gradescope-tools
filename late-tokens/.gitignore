@@ -2,3 +2,5 @@
 env/
 geckodriver.log
 debug.log
+*.csv
+*.pyc
