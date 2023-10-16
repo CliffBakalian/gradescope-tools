@@ -19,3 +19,4 @@ then we setup the driver and login to gradescope. Then get all data
 '''
 logging.basicConfig(filename='debug.log', level=logging.INFO)
 driver = login(setup(),username,password)
+do_it_all(driver)

@@ -106,35 +106,22 @@ store the assignment data for a course.
 CANNOT be used to update
 '''
 def store_assignments(course,assignments):
-  course_file = course+".json"
-  f = open(course_file)
-  if not f:
-    err = "Could not find " + course_json
-    logging.error(err)
-    print(err)
-    exit(1)
-  try:
-    course = json.load(f)
-  except json.JSONDecodeError:
-    err = course_file+ " file is malformed"
-    logging.error(err)
-    print(err)
-    exit(1)
-  f.close()
+  coursejson = get_course_json(course)
   for (name,link,published) in assignments:
     assignment = {}
     assignment['name'] = name
     assignment['link'] = link
     assignment['published'] = published
     assignment['questions'] = []
-    course['assignments'].append(assignment)
+    coursejson['assignments'].append(assignment)
+
     assignjson = open(link+".json","w")
     assign = {}
     assign['questions'] = []
     assignjson.write(json.dumps(assign,indent=2))
     assignjson.close()
-  with open(course_file,"w") as coursejson:
-    coursejson.write(json.dumps(course,indent=2))
+  with open(course+".json","w") as coursefile:
+    coursefile.write(json.dumps(coursejson,indent=2))
 
 '''
 given a course name, assignment name and question data
