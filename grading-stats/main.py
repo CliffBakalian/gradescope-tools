@@ -22,16 +22,9 @@ then we setup the driver and login to gradescope. Then get all data
 logging.basicConfig(filename='debug.log', level=logging.INFO)
 driver = login(setup(),username,password)
 
-if test:
-  courses = scrapeCourses(driver)
-  assert(courses == [('CMSC330', 'https://www.gradescope.com/courses/561034'), ('CMSC330 Sandbox', 'https://www.gradescope.com/courses/598515'), ('cmsc389t-fall23', 'https://www.gradescope.com/courses/590767')])
-
-#store_courses(scrapeCourses(driver))
-#store_assignments("CMSC330",scrapeAssignments(driver,TEST_COURSE))
-#store_questions("CMSC330","Exam 1",scrapeQuestions(driver,TEST_COURSE,TEST_ASSIGNMENT))
-#print(scrapeQuestions(driver,TEST_COURSE,TEST_ASSIGNMENT))
-#print(scrapeCount(driver,TEST_COURSE,TEST_QUESTION))
-#store_assignment("Exam 1","Question 11: 2(b) Regex Engineering",scrapeCount(driver,TEST_COURSE,TEST_QUESTION))
+'''
+this causes my laptop to freeze up. Haven't tried on big boi
+'''
 def do_it_all():
   courses = scrapeCourses(driver)
   store_courses(courses)
@@ -44,4 +37,90 @@ def do_it_all():
       for (qname,qlink,_) in questions:
         counts = scrapeCount(driver,link,qlink)
         store_assignment(aname,qname,counts)
-do_it_all()
+
+def update_assignments(course):
+  course_file=course+".json"
+  f = open(course_file)
+  if not f:
+    err = "Could not find " + course_json
+    logging.error(err)
+    print(err)
+    exit(1)
+  try:
+    course = json.load(f)
+  except json.JSONDecodeError:
+    err = course_file+ " is malformed"
+    logging.error(err)
+    print(err)
+    exit(1)
+  f.close()
+  link = course['link']
+  assignments = scrapeAssignments(driver,link)
+  #store_assignments(course,link)
+
+def update_questions(course,assignment=None):
+  course_file=course+".json"
+  f = open(course_file)
+  if not f:
+    err = "Could not find " + course_json
+    logging.error(err)
+    print(err)
+    exit(1)
+  try:
+    course = json.load(f)
+  except json.JSONDecodeError:
+    err = course_file+ " is malformed"
+    logging.error(err)
+    print(err)
+    exit(1)
+  f.close()
+  course_link = course['link']
+  for assign in course['assignments']:
+    if not assignment or assign['name'] == assignment:
+      alink = assign['link']
+      questions = scrapeQuestions(driver,course_link,alink)
+      store_questions(course['name'],assign['name'],questions)
+
+def update_counts(course,assignment_id,question=None):
+  assign_file=assignment_id+".json"
+  f = open(assign_file)
+  if not f:
+    err = "Could not find " + assign_file
+    logging.error(err)
+    print(err)
+    exit(1)
+  try:
+    assign = json.load(f)
+  except json.JSONDecodeError:
+    err = assign_file+ " is malformed"
+    logging.error(err)
+    print(err)
+    exit(1)
+  f.close()
+  course_file=course+".json"
+  f = open(course_file)
+  if not f:
+    err = "Could not find " + course_file
+    logging.error(err)
+    print(err)
+    exit(1)
+  try:
+    coursejson = json.load(f)
+  except json.JSONDecodeError:
+    err = course_file+ " is malformed"
+    logging.error(err)
+    print(err)
+    exit(1)
+  f.close()
+  course_id = coursejson['link']
+  if question:
+    for q in assign['questions']:
+      if q['link'] == question:
+        counts = scrapeCount(driver,course_id,question)
+        q['counts'] = counts
+  else:
+    for assignment in coursejson['assignments']:
+      if assignment['link'] == assignment_id:
+        for q in assignment['questions']:
+          counts = scrapeCount(driver,course_id,q['link'])
+          store_assignment(assignment_id,q['name'],counts)

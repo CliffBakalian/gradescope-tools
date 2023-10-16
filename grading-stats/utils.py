@@ -168,12 +168,12 @@ def store_questions(course,assignment,questions):
     coursejson.write(json.dumps(course,indent=2))
 
 '''
-given an assignment name, a question title and the counts of graders
+given an assignment id, a question title and the counts of graders
 store the counts in assignment_name.json
 can be used to update counts
 '''
-def store_assignment(assignment,question,counts):
-  assignment_file = assignment.replace("/","_")+".json"
+def store_assignment(assignment_id,question,counts):
+  assignment_file = assignment_id.replace("/","_")+".json"
   f = open(assignment_file)
   if not f:
     err = "Could not find " + course_json + ". Will make"

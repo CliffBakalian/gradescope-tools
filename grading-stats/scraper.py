@@ -87,15 +87,18 @@ def scrapeQuestions(browser,course,assignment):
     ret = []
     for elem in questionList:
       # need to get link to submissions. The first link is good enough
-      titleColumn = elem.find_element(By.TAG_NAME,"a")
-      # link will point to 'courses/COURSE_ID/questions/QUESTION_ID/grade. We want QUESTION_ID
-      link = titleColumn.get_attribute('href').split("/")[4]
-      # text is the name of the question
-      name = titleColumn.text
-      # the percent graded falls under this progressPercent column 
-      # the format is "Percent graded for question x:\ny%" so we split on \n and get rid of the % sign
-      percentDone = int(elem.find_element(By.CLASS_NAME, "gradingDashboard--progressPercent").text.split("\n")[1][:-1])
-      ret.append((name,link,percentDone))
+      try:
+        titleColumn = elem.find_element(By.TAG_NAME,"a")
+        # link will point to 'courses/COURSE_ID/questions/QUESTION_ID/grade. We want QUESTION_ID
+        link = titleColumn.get_attribute('href').split("/")[-2]
+        # text is the name of the question
+        name = titleColumn.text
+        # the percent graded falls under this progressPercent column 
+        # the format is "Percent graded for question x:\ny%" so we split on \n and get rid of the % sign
+        percentDone = int(elem.find_element(By.CLASS_NAME, "gradingDashboard--progressPercent").text.split("\n")[1][:-1])
+        ret.append((name,link,percentDone))
+      except:
+        print("Could not scrape question for course: " + course + "assignment: " + assignment)
     return ret
   else:
     browser.close()
@@ -112,24 +115,27 @@ def scrapeCount(browser,course,question):
   browser.get(expected)
   if checkPage(browser,expected):
     TABLE_NAME = "question_submissions"
-    questionTable = browser.find_element(By.ID, TABLE_NAME).find_element(By.TAG_NAME,"tbody") #table  only one that uses an id, weird.
-    # this table alternames names "odd" and "even". No other table does. Weird.
-    questionList = questionTable.find_elements(By.TAG_NAME, "tr") 
-
     ret = {}
-    for elem in questionList:
-      # need to get name. It is the third column in the table 
-      third_column = elem.find_elements(By.TAG_NAME,"td")[2]
-      name = third_column.text
-      if name != '':
-        if name in ret:
-          ret[name] += 1
-        else:
-          ret[name] = 1
+    try:
+      questionTable = browser.find_element(By.ID, TABLE_NAME).find_element(By.TAG_NAME,"tbody") #table  only one that uses an id, weird.
+      # this table alternames names "odd" and "even". No other table does. Weird.
+      questionList = questionTable.find_elements(By.TAG_NAME, "tr") 
+
+      for elem in questionList:
+        # need to get name. It is the third column in the table 
+        third_column = elem.find_elements(By.TAG_NAME,"td")[2]
+        name = third_column.text
+        if name != '':
+          if name in ret:
+            ret[name] += 1
+          else:
+            ret[name] = 1
+    except:
+      print("Could not scrape count for course: " + course + "question: " + question)
     return ret
   else:
     browser.close()
-    logging.error("Question page for " + assignment + " Not Found: check course ID")
+    logging.error("Question page for " + course + " Not Found: check course ID")
   return {}
 
 
