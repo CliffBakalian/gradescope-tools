@@ -81,6 +81,10 @@ def checkPage(browser,url):
     logging.error("check for " + url + " failed due to Selenium")
     logging.error(e)
 
+def write_coursejson(coursejson):
+  with open(coursejson['name']+".json","w") as coursefile:
+    coursefile.write(json.dumps(coursejson,indent=2))
+
 '''
 this will store course info and only course info
 if you want to add assignments or graders you will
@@ -124,7 +128,7 @@ def store_assignments(course,assignments):
     assignment['published'] = published
     assignment['questions'] = []
     course['assignments'].append(assignment)
-    assignjson = open(name.replace("/","_")+".json","w")
+    assignjson = open(link+".json","w")
     assign = {}
     assign['questions'] = []
     assignjson.write(json.dumps(assign,indent=2))
@@ -138,24 +142,10 @@ store the question data for the assignment.
 CANNOT be used to update question data
 '''
 def store_questions(course,assignment,questions):
-  course_file = course+".json"
-  f = open(course_file)
-  if not f:
-    err = "Could not find " + course_json
-    logging.error(err)
-    print(err)
-    exit(1)
-  try:
-    course = json.load(f)
-  except json.JSONDecodeError:
-    err = course_file+ " is malformed"
-    logging.error(err)
-    print(err)
-    exit(1)
-  f.close()
-
-  for assign in course['assignments']:
+  coursejson = get_course_json(course)
+  for assign in coursejson['assignments']:
     if assign['name'] == assignment:
+      assignjson = get_assignment_json(assign['link'],True)
       qs = []
       for (name,link,pdone) in questions:
         question = {}
@@ -163,40 +153,73 @@ def store_questions(course,assignment,questions):
         question['link'] = link
         question['percentdone'] = pdone
         qs.append(question) 
+
+        aquestion = {}
+        aquestion['name'] = name
+        aquestion['link'] = link
+        aquestion['counts'] = {}
+        assignjson['questions'].append(aquestion)
+
+      with open(assign['link']+".json","w") as assignfile:
+        assignfile.write(json.dumps(assignjson,indent=2))
       assign['questions'] = qs
-  with open(course_file,"w") as coursejson:
-    coursejson.write(json.dumps(course,indent=2))
+  with open(course+".json","w") as coursefile:
+    coursefile.write(json.dumps(course,indent=2))
 
 '''
 given an assignment id, a question title and the counts of graders
 store the counts in assignment_name.json
 can be used to update counts
 '''
-def store_assignment(assignment_id,question,counts):
-  assignment_file = assignment_id.replace("/","_")+".json"
-  f = open(assignment_file)
-  if not f:
-    err = "Could not find " + course_json + ". Will make"
-    logging.error(err)
-    print(err)
-    assignmnet = {'questions':[]}
-  try:
-    if f:
-      assignment = json.load(f)
-  except json.JSONDecodeError:
-    err = assignment_file+ " is malformed"
-    logging.error(err)
-    print(err)
-    exit(1)
-  f.close()
-
-  found = False
+def store_counts(assignment_id,question,counts):
+  assignment = get_assignment_json(assignment_id)
   for q in assignment['questions']:
     if q['name'] == question:
       found = True
       q['counts'] = counts
-  if not found:
-    assignment['questions'].append({'name':question,'counts':counts})
   with open(assignment_file,"w") as assignmentjson:
     assignmentjson.write(json.dumps(assignment,indent=2))
 
+def get_course_json(course):
+  course_file=course+".json"
+  try:
+    f = open(course_file)
+  except:
+    err = "Could not find " + course_file
+    logging.error(err)
+    print(err)
+    exit(1)
+  try:
+    coursejson = json.load(f)
+  except json.JSONDecodeError:
+    err = course_file+ " is malformed"
+    logging.error(err)
+    print(err)
+    exit(1)
+  f.close()
+  return coursejson
+
+def get_assignment_json(assignment_id,make=False):
+  assign_file=assignment_id+".json"
+  try:
+    f = open(assign_file)
+  except:
+    if not make:
+      err = "Could not find " + assign_file
+      logging.error(err)
+      print(err)
+      exit(1)
+    else:
+      err = "Could not find " + assign_file + ". Will make."
+      logging.error(err)
+      print(err)
+      return {"questions":[]}
+  try:
+    assignjson = json.load(f)
+  except json.JSONDecodeError:
+    err = assign_file+ " is malformed"
+    logging.error(err)
+    print(err)
+    exit(1)
+  f.close()
+  return assignjson

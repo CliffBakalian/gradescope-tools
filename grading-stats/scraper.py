@@ -82,8 +82,8 @@ def scrapeQuestions(browser,course,assignment):
     TABLE_NAME = "gradingDashboard"
     questionTable = browser.find_element(By.CLASS_NAME, TABLE_NAME) #table 
     #every row has this class. idk why
-    questionList = questionTable.find_elements(By.CLASS_NAME, "table--row-resetTopBorder") 
-
+    questionList = questionTable.find_elements(By.CLASS_NAME, "table--row-resetTopBorder") + questionTable.find_elements(By.CLASS_NAME,"table--row-noBorders") 
+    
     ret = []
     for elem in questionList:
       # need to get link to submissions. The first link is good enough
@@ -98,7 +98,9 @@ def scrapeQuestions(browser,course,assignment):
         percentDone = int(elem.find_element(By.CLASS_NAME, "gradingDashboard--progressPercent").text.split("\n")[1][:-1])
         ret.append((name,link,percentDone))
       except:
-        print("Could not scrape question for course: " + course + "assignment: " + assignment)
+        logging.error("Could not find a tag. Could have subquestions")
+    if ret == []:
+      print("Could not scrape question for course: " + course + " assignment: " + assignment)
     return ret
   else:
     browser.close()
