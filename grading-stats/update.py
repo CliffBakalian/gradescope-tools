@@ -2,20 +2,27 @@ from utils import *
 from scraper import *
 
 '''
-this causes my laptop to freeze up. Haven't tried on big boi
+this causes my laptop to freeze up, but eventually works. 
+Desktop works fine
+
+Desktop specs: 32gb,RTX 2060, i5-9600K 
+Laptop specs: 16gb, i5-1240P with integrated graphics
+
+need to learn python threading
 '''
 def do_it_all(driver):
   courses = scrapeCourses(driver)
   store_courses(courses)
-  for (name,link) in courses:
-    assignments = scrapeAssignments(driver,link)
-    store_assignments(name,assignments)
-    for (aname,alink,_) in assignments:
-      questions = scrapeQuestions(driver,link,alink)
-      store_questions(name,aname,questions)
-      for (qname,qlink,_) in questions:
-        counts = scrapeCount(driver,link,qlink)
-        store_assignment(aname,qname,counts)
+  if courses:
+    for (name,link) in courses:
+      assignments = scrapeAssignments(driver,link)
+      store_assignments(name,assignments)
+      for (aname,alink,_) in assignments:
+        questions = scrapeQuestions(driver,link,alink)
+        store_questions(name,aname,questions)
+        for (qname,qlink,_) in questions:
+          counts = scrapeCount(driver,link,qlink)
+          store_counts(alink,qname,counts)
 
 
 '''

@@ -1,17 +1,14 @@
-import logging
 from dotenv import dotenv_values
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 from update import *
 from utils import *
+from scraper import *
 
 config = dotenv_values(".env")
 username = config["USERNAME"]
 password = config["PASSWORD"]
-TEST_COURSE = config['TEST_COURSE']
-TEST_ASSIGNMENT = config['TEST_ASSIGNMENT']
-TEST_QUESTION = config['TEST_QUESTION']
 
 '''
 start by setting up a logger to make sure everything runs smoothly

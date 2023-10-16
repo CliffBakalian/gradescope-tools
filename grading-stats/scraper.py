@@ -33,7 +33,8 @@ def scrapeCourses(browser):
                  for elem in courseList if len(elem.find_elements(By.CLASS_NAME, shortname)) > 0]
       return courses
     else:
-      browser.close()
+      if browser:
+        browser.close()
       logging.error("Course Scrape Failed: not on homepage)")
 
 '''

@@ -45,7 +45,7 @@ def login(browser,uname,pword):
       browser.close()
       logging.error("Login Failed: incorrect credentials)")
   except Exception as e:
-    browser.close()
+    #browser.close()
     logging.error("Could not find elements on Login page or gradescope is down")
     logging.error(e)
 
@@ -57,7 +57,7 @@ def setup():
     logging.info("Setup Successful")
     return browser
   except Exception as e:
-    browser.close()
+    #browser.close()
     logging.error("Setup Failed")
     logging.error(e)
 
@@ -77,7 +77,7 @@ def checkPage(browser,url):
       logging.error("expected " + url)
       return False
   except Exception as e:
-    browser.close()
+    #browser.close()
     logging.error("check for " + url + " failed due to Selenium")
     logging.error(e)
 
@@ -91,14 +91,15 @@ if you want to add assignments or graders you will
 need to call add_assignment
 '''
 def store_courses(courses):
-  for (name,link) in courses:
-    course = {}
-    course['name'] = name
-    course['link'] = link
-    course['assignments'] = []
-    course['graders'] = []
-    with open(name+".json","w") as coursejson:
-      coursejson.write(json.dumps(course,indent=2))
+  if courses:
+    for (name,link) in courses:
+      course = {}
+      course['name'] = name
+      course['link'] = link
+      course['assignments'] = []
+      course['graders'] = []
+      with open(name+".json","w") as coursejson:
+        coursejson.write(json.dumps(course,indent=2))
 
 '''
 given a course name and assignment data
@@ -151,7 +152,7 @@ def store_questions(course,assignment,questions):
         assignfile.write(json.dumps(assignjson,indent=2))
       assign['questions'] = qs
   with open(course+".json","w") as coursefile:
-    coursefile.write(json.dumps(course,indent=2))
+    coursefile.write(json.dumps(coursejson,indent=2))
 
 '''
 given an assignment id, a question title and the counts of graders
@@ -164,7 +165,7 @@ def store_counts(assignment_id,question,counts):
     if q['name'] == question:
       found = True
       q['counts'] = counts
-  with open(assignment_file,"w") as assignmentjson:
+  with open(assignment_id+".json","w") as assignmentjson:
     assignmentjson.write(json.dumps(assignment,indent=2))
 
 def get_course_json(course):
