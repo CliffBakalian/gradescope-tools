@@ -7,3 +7,4 @@ debug.log
 .env
 geckodriver.log
 *.json
+gs.pkl

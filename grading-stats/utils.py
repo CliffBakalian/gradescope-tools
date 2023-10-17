@@ -2,12 +2,22 @@ from selenium import webdriver
 from dotenv import dotenv_values
 import logging
 import json
+import pickle
 
 '''
 Just some utility functions. 
 '''
 
 def get_driver():
+  try:
+    cookies = pickle.load(open("gs.pkl","rb"))
+    driver = setup()
+    driver.get("https://www.gradescope.com")
+    for cookie in cookies:
+      driver.add_cookie(cookie)
+    return driver
+  except:
+    print("first time") 
   config = dotenv_values(".env")
   username = config["USERNAME"];
   password = config["PASSWORD"];
@@ -40,6 +50,7 @@ def login(browser,uname,pword):
     expected = "https://www.gradescope.com/account" 
     if checkPage(browser,expected):
       logging.info("Login Successful")
+      pickle.dump(browser.get_cookies(),open("gs.pkl","wb"))
       return browser
     else:
       browser.close()
@@ -50,11 +61,16 @@ def login(browser,uname,pword):
     logging.error(e)
 
 def setup():
+  print("about to setup")
   try:
-    fireFoxOptions = webdriver.firefox.options.Options()
-    fireFoxOptions.add_argument("--headless")
-    browser = webdriver.Firefox(options=fireFoxOptions)
+    #fireFoxOptions = webdriver.firefox.options.Options()
+    #fireFoxOptions.add_argument("--headless")
+    #browser = webdriver.Firefox(options=fireFoxOptions)
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless")
+    browser = webdriver.Chrome(options=options)
     logging.info("Setup Successful")
+    print("setup complete")
     return browser
   except Exception as e:
     #browser.close()

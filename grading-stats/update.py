@@ -72,14 +72,15 @@ def update_counts(driver,course,assignment_id,question_id=None):
   assign = get_assignment_json(assignment_id)
   coursejson = get_course_json(course)
   course_id = coursejson['link']
-  if question:
+  if question_id:
     for q in assign['questions']:
-      if q['link'] == question:
-        counts = scrapeCount(driver,course_id,question)
+      if q['link'] == question_id:
+        counts = scrapeCount(driver,course_id,question_id)
         q['counts'] = counts
+        store_counts(assignment_id,q['name'],counts)
   else:
     for assignment in coursejson['assignments']:
       if assignment['link'] == assignment_id:
         for q in assignment['questions']:
           counts = scrapeCount(driver,course_id,q['link'])
-          store_assignment(assignment_id,q['name'],counts)
+          store_counts(assignment_id,q['name'],counts)
