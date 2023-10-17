@@ -143,6 +143,34 @@ def scrapeCount(browser,course,question):
 
 
 '''
+get the graders for a course. 
+Will need to manually check since roster has first and last name, but grading
+name includes middle name
+returns a list of strings
+'''
+def scrapeGraders(browser,course_id):
+  expected = "https://www.gradescope.com/courses/"+course_id+"/memberships"
+  expected += "?role=2" #filter to get TA role
+  browser.get(expected)
+  ret = []
+  if checkPage(browser,expected):
+    TABLE_NAME = "DataTables_Table_0"
+    try:
+      rosterTable = browser.find_element(By.ID, TABLE_NAME).find_element(By.TAG_NAME,"tbody") #table  only one that uses an id, weird.
+      # this table alternames names "odd" and "even". No other table does. Weird.
+      rosterList = rosterTable.find_elements(By.CLASS_NAME, "rosterNameColumn") 
+
+      for row in rosterList:
+        ret.append(row.text) 
+    except:
+      print("Could not scrape roster for course: " + course)
+    return list(set(ret))
+  else:
+    browser.close()
+    logging.error("Memberships page for " + course + " Not Found: check course ID")
+  return ret
+
+'''
 this is just something to get to a specific course homepage
 '''
 def getCoursePage(browser,course):

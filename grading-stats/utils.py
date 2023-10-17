@@ -2,6 +2,7 @@ from selenium import webdriver
 from dotenv import dotenv_values
 import logging
 import json
+import csv
 import pickle
 
 '''
@@ -61,7 +62,6 @@ def login(browser,uname,pword):
     logging.error(e)
 
 def setup():
-  print("about to setup")
   try:
     #fireFoxOptions = webdriver.firefox.options.Options()
     #fireFoxOptions.add_argument("--headless")
@@ -70,7 +70,6 @@ def setup():
     options.add_argument("--headless")
     browser = webdriver.Chrome(options=options)
     logging.info("Setup Successful")
-    print("setup complete")
     return browser
   except Exception as e:
     #browser.close()
@@ -184,6 +183,17 @@ def store_counts(assignment_id,question,counts):
   with open(assignment_id+".json","w") as assignmentjson:
     assignmentjson.write(json.dumps(assignment,indent=2))
 
+'''
+given a course, and the list of graders, store the graders.
+This can be used to update graders
+'''
+def store_graders(course,graders):
+  coursejson = get_course_json(course)
+  coursejson['graders'] = graders 
+  with open(course+".json","w") as coursefile:
+    coursefile.write(json.dumps(coursejson,indent=2))
+
+
 def get_course_json(course):
   course_file=course+".json"
   try:
@@ -202,6 +212,28 @@ def get_course_json(course):
     exit(1)
   f.close()
   return coursejson
+
+'''
+given a course and an assignmnetn id, make a csv file
+with graders as columns
+and questions as rows
+'''
+def store_stats_as_csv(course,assignment_id):
+  assignmnetjson = get_assignment_json(assignment_id)
+  course = get_course_json(course)
+  graders = course['graders']
+  with open(assignment_id+'.csv', 'w') as csvfile:
+    spamwriter = csv.writer(csvfile, delimiter=',')
+    spamwriter.writerow(["question"] + graders) # header
+    for question in assignmnetjson['questions']:
+      row = [question['name']]
+      counts = question['counts']
+      for grader in graders:
+        if grader in counts:
+          row.append(counts[grader]) 
+        else:
+          row.append(None)
+      spamwriter.writerow(row)
 
 def get_assignment_json(assignment_id,make=False):
   assign_file=assignment_id+".json"
