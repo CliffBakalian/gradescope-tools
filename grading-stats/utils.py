@@ -19,11 +19,16 @@ def get_driver():
     return driver
   except:
     print("first time") 
-  config = dotenv_values(".env")
-  username = config["USERNAME"];
-  password = config["PASSWORD"];
-
   logging.basicConfig(filename='debug.log', level=logging.INFO)
+  try:
+    config = dotenv_values(".env")
+    username = config["USERNAME"];
+    password = config["PASSWORD"];
+
+  except:
+    print("No .env file found or is malformed")
+    username = input("gradescope email: ")
+    password = input("gradescope password: ")
   driver = login(setup(),username,password)
   return driver
 

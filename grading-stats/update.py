@@ -3,6 +3,8 @@ from scraper import *
 
 '''
 this causes my laptop to freeze up, but eventually works. 
+edit: switching from firefox to chrome somehow makes this better on laptop
+      but still not as good as desktop
 Desktop works fine
 
 Desktop specs: 32gb,RTX 2060, i5-9600K 
@@ -45,6 +47,16 @@ def update_assignments(driver,course):
       assignment['published'] = pub
       assignment['questions'] = []
       course['assignments'].append(assignment)
+
+      assignjson = open(link+".json","w")
+      assign = {}
+      assign['questions'] = []
+      assignjson.write(json.dumps(assign,indent=2))
+      assignjson.close()
+    else:
+      for assignment in course['assignments']:
+        if assignment['name'] == name:
+          assignment['published'] = pub
   write_coursejson(course)
 
 '''
