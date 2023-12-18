@@ -123,7 +123,6 @@ def scrapeAllSubmissions(browser,course=None,assignment=None,user=None):
   if course and assignment and user:
     #idk why this needs the # symbol
     #expected = "https://www.gradescope.com/courses/"+course+"/assignments/"+assignment+"/submissions/"+user+"#"
-    # now it doesn't?
     expected = "https://www.gradescope.com/courses/"+course+"/assignments/"+assignment+"/submissions/"+user
   browser = getSubmissionPage(browser,course,assignment,user)
   logging.info("about to check page")
@@ -175,6 +174,46 @@ def scrapeAllSubmissions(browser,course=None,assignment=None,user=None):
     logging.error("Error finding the submission page. Make sure course, assignment and user IDs are correct")
     logging.error("Course: "+ course + "\tAssignment: " + assignment + "\tUser: " + user)
 
+'''
+this will go to the extensions page and scrape the extension data. 
+It will return a tuple of (Name, section, Due Date)
+Section is added because some people have same first and last name and
+hopefully section will catch it. Unfortunately the extension page does not
+have any info about UID
+'''
+def scrapeExtensions(browser,course=None,assignment=None):
+  if course and assignment:
+    expected = "https://www.gradescope.com/courses/"+course+"/assignments/"+assignment+"/extensions"
+  browser = getExtensionPage(browser,course,assignment)
+  logging.info("about to check page")
+
+  if course and assignment:# or checkPage(browser,expected):
+    try:
+      submissionTable = browser.find_element(By.ID, "DataTables_Table_0").find_element(By.TAG_NAME,"tbody") 
+      rows = submissionTable.find_elements(By.TAG_NAME,"tr")
+    except:
+      logging.error("Could not find the extension table or could not link info. Check ID or url")
+      browser.close()
+    try: 
+      extensions = []
+      for row in rows:
+        cols = row.find_elements(By.TAG_NAME,"td")
+        name_col = cols[0]
+        section_col = cols[2]
+        due_date_col = cols[4]
+        name = name_col.text
+        section = section_col.text
+        due_date = due_date_col.find_element(By.TAG_NAME,"time").get_attribute("datetime")
+        extensions.append((name,section,due_date))
+        logging.info("got info:{name: "+name+", section: " + section + ",due date: " + str(due_date)) 
+      return extensions
+    except:
+      logging.error("reading table wrong")
+      browser.close()
+  else:
+    browser.close()
+    logging.error("Extension page Not Found: check course ID or assignment id")
+    logging.error("Course: "+ course + "\tAssignment: " + assignment)
 '''
 this is just something to get to the submission page for a specific user and assignment 
 '''
@@ -248,6 +287,23 @@ def getAssignmentsPage(browser,course=None):
     logging.error("Assignments Page Not Found: check course ID")
 
 '''
+this will get the extension page for the assignment
+'''
+def getExtensionPage(browser,course=None,assignment=None):
+  if not course or not assignment:
+    base = browser.current_url
+  else:
+    base = "https://www.gradescope.com/courses/"+course + "/assignments/" + assignment
+  expected = base + "/extensions"
+  browser.get(expected)
+  if checkPage(browser,expected):
+    logging.info("Extention Page Found: "+ expected)
+    return browser
+  else:
+    browser.close()
+    logging.error("Extention Page Not Found: check course or assignment ID")
+
+'''
 takes a course, and an assignment and caches's it. 
 caller has to loop through all assignments
 '''
@@ -302,6 +358,23 @@ def cache_history(driver,course,assignment,update=False):
       logging.info("Cached history for "+name)
   logging.info("Cached!")
 
+'''
+takes in a course and assignment and caches the extenstions
+'''
+def cache_extension(driver,course,assignment):
+  logging.info("Caching "+assignment + "extentions")
+  # make the assignment directory if does not exist
+  if not os.path.exists(assignment):
+    logging.info("made "+assignment+" folder")
+    os.mkdir(assignment)
+
+  exts = scrapeExtensions(driver,course,assignment)
+
+  with open(os.path.join(assignment,assignment+'.exts'),'w') as f:
+    for s,l,d in exts:
+      f.write(str(s)+","+str(l)+","+str(d)+"\n") 
+  logging.info("Cached!")
+
 def get_all_submissions(driver,course,assignment,name,user):
   if not os.path.exists(os.path.join(assignment,name+'.'+assignment)):
     print("could not find cache")
@@ -317,3 +390,4 @@ def get_all_submissions(driver,course,assignment,name,user):
       info = line.split(",") 
       ret.append((info[0],info[1]))
   return ret
+
