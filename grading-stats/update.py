@@ -17,6 +17,8 @@ def do_it_all(driver):
   store_courses(courses)
   if courses:
     for (name,link) in courses:
+      graders = scrapeGraders(driver,link)
+      store_graders(name,graders)
       assignments = scrapeAssignments(driver,link)
       store_assignments(name,assignments)
       for (aname,alink,_) in assignments:

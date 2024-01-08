@@ -147,13 +147,15 @@ def store_assignments(course,assignments):
 '''
 given a course name, assignment name and question data
 store the question data for the assignment.
-CANNOT be used to update question data
+~~CANNOT be used to update question data~~
+Can now be used to update question data
 '''
 def store_questions(course,assignment,questions):
   coursejson = get_course_json(course)
   for assign in coursejson['assignments']:
     if assign['name'] == assignment:
       assignjson = get_assignment_json(assign['link'],True)
+      local_questions=list(map(lambda x: x['link'],assignjson['questions']))
       qs = []
       for (name,link,pdone) in questions:
         question = {}
@@ -161,12 +163,13 @@ def store_questions(course,assignment,questions):
         question['link'] = link
         question['percentdone'] = pdone
         qs.append(question) 
-
-        aquestion = {}
-        aquestion['name'] = name
-        aquestion['link'] = link
-        aquestion['counts'] = {}
-        assignjson['questions'].append(aquestion)
+        
+        if link not in local_questions:
+          aquestion = {}
+          aquestion['name'] = name
+          aquestion['link'] = link
+          aquestion['counts'] = {}
+          assignjson['questions'].append(aquestion)
 
       with open(assign['link']+".json","w") as assignfile:
         assignfile.write(json.dumps(assignjson,indent=2))
@@ -183,7 +186,6 @@ def store_counts(assignment_id,question,counts):
   assignment = get_assignment_json(assignment_id)
   for q in assignment['questions']:
     if q['name'] == question:
-      found = True
       q['counts'] = counts
   with open(assignment_id+".json","w") as assignmentjson:
     assignmentjson.write(json.dumps(assignment,indent=2))

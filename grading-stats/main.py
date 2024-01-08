@@ -17,7 +17,7 @@ def examples():
   courses = scrapeCourses(driver)
 
   # will write the course_name.json file for each course
-  # again, onlt need to run once per semester
+  # again, only need to run once per semester
   store_courses(courses)
 
   # get a [grader]
@@ -53,7 +53,7 @@ def examples():
   # stores the question date in course_name.json and information in 
   # assignment_id.json
   # run once to setup information or to wipe all question data for all questions
-  store_questions(coure_name,assignment_name,qustions)
+  store_questions(course_name,assignment_name,questions)
 
   # will get all questions names from gradescope and update 
   # assignment_id.json 
@@ -68,7 +68,7 @@ def examples():
 
   # will get how many questions people graded on gradescope and store this
   # information in assignment_id.json
-  # run this every so ofter to see updates on who graded what
+  # run this every so often to see updates on who graded what
   update_counts(driver,course_name,assignment_id,qusetion_id)
 
   # if you wanted to write to file the above 

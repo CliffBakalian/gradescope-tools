@@ -6,86 +6,139 @@
 
 ## installation 
 
-you can install this by running `go install github.com/cliffbakalian/gradescope-tools/grading-stats`  
-Note: make sure your $GOPATH is set. I beieve by default it is not. Assuming go is installed in `~/go`
-you should be able to run:
+You should be able to clone this repository and just run `main.py`  
+
+## Structure of files
+
+This program works by scraping gradescope and creating local files that stores
+the scrapped data. These files are in json format. 
+
+Some background first: 
+Gradescope urls look like 
+https://www.gradescope.com/courses/XXXXX/assignments/YYYYYYY/ 
+where XXXXXX is the course id and YYYYYYY is the assignment id.
+
+The files created (and some of the consequent data) will be based on these ids. 
+These files look like the following:
+
+  + `course_id.json`- Contains the following information:
+      - Course Name
+      - Course ID (link)
+      - List of assignments - Each Assignment has the following information: 
+        + Assignment Name
+        + Assignment ID (link)
+        + If the assignment is published or not
+        + List of questions - Each Question has the following information:
+          - Question Name
+          - Question ID (link: https://www.gradescope.com/courses/XXXXX/questions/ZZZZZZZZ/submissions where ZZZZZZZZ is the question ID)
+          - Percentage Done
+      - List of grader names
+  + `assignment_id.json` - Contains the following information:
+      - List of Questions - Each question has the following information:
+          - Question Name
+          - Question ID (link)
+          - List of counts - Each question has a key of a grader's name and a value of the number they graded
+
+**Question**: Why the duplicate data of Question information/Why have a separate assignment file?  
+**Answer**: Program should only update/scrape what is needed. 
+`course_id.json` indicates to program what needs to be updated (based off the question percentage done). 
+`assignment_id.json` is the file that will be updated and overwritten consistently.
+
+### Sample Files
+
+#### `course_id.json`
+Here is an example of `course_id.json` (named `123456.json`):
+```json
+{
+  "name": "Course1",
+  "link": "123456",
+  "assignments": [
+    {
+      "name": "assignment one",
+      "link": "0000001",
+      "published": false,
+      "questions": [
+        {
+          "name": "Named Question 1",
+          "link": "10000001",
+          "percentdone": 100
+        },
+        {
+          "name": "2:",
+          "link": "10000002",
+          "percentdone": 45 
+        }
+      ]
+    },
+    {
+      "name": "assignment 2",
+      "link": "0000002",
+      "published": true,
+      "questions": [
+        {
+          "name": "Q1",
+          "link": "20000001",
+          "percentdone": 100
+        }
+      ]
+    }
+  ],
+  "graders": [
+    "Cliff Bakalian",
+    "Grader 1",
+    "Grader 2"
+  ]
+}
 ```
-export GOPATH="$HOME/go"
-PATH="$GOPATH/bin:$PATH"
+
+#### `assignment_id.json`
+
+Here is an example of `assignment_id.json` (named `0000001.json` corresponding to the above assignment one):
+```json
+{
+  "questions":[
+    {
+      "name": "Named Question 1",
+      "link": "10000001",
+      "counts": {
+        "Cliff Bakalian": 20,
+        "Grader 1": 19,
+        "Grader 2": 21
+      }
+    },
+    {
+      "name": "2:",
+      "link": "10000002",
+      "counts": {
+        "Cliff Bakalian": 20,
+        "Grader 1": 7
+      }
+    }
+  ]
+}
 ```
-to add the install binary to your path
 
 ## Running the program
-There are two things you can do, either get the grading data, or write the grading data to file
+***TODO: Need to finalize the interface***
+You can currently work with `shell.py`.  
+The program accepts the following command line arguments:
+```bash
+python shell.py update <course> [--all|--only-needed]
 
-Gradescope urls look like https://www.gradescope.com/courses/XXXXX/assignments/YYYYYYY/ where XXXXXX is the course id and YYYYYYY is the assignment id.
 
-So an example command would be:
-```
-grading-stats -course XXXXXX -assignment YYYYYYY -email cliffbakalian@gmail.com -password password123
-```
-
-If you do not provide an email (gradescope login) and password then the program will prompt you for it.
-Sending in the password as a command line argument is not safe so please don't do it. It does make scripting nice though :)
-
-## Updating the 'Databse'
-
-I put 'database' in quotes because it's just a json file : `.assignments.json` to be specific
-To update or create the 'database' of grading information, you can update
-  + all the courses you have
-  + a singleular course
-  + just a single assignment
-
-By using the `-update` flag, the program will update the entire 'databse'. Since at the time of writng this, gradescope does not seem to have an API, we must scrape so please be nice to gradescope servers and do this occasionally.  
-
-To update all active courses leave the course flag empty:
-```
-grading-stats -update 
+python shell.py --first-time
 ```
 
-To update all assignments in a single course leave the assignment flag empty:
-```
-grading-stats -update -course XXXXXX 
-```
+`--first-time` should be run ***once and only once***. If something got messed up
+you will need to delete all created files before you rerun.  
 
-To update a single assignment, give both a course and assignment value:
-```
-grading-stats -update -course XXXXXX -assignment YYYYYYY
-```
+`--only-needed` will only update questions that are not 100 percent graded on assignments that have not been published on gradescope. The edge case is that Gradescope does sound rounding when reporting percent complete so its possible an assignment is not fully graded but Gradescope says 100% (say 997 out of 1000 are graded).  
 
-## Writing to File
-To write the database to a file, you can do the same as updating:
-  + write all stats for all active courses you have
-  + write all stats for a singleular course
-  + write stats for a single assignment
-The output will be `YYYYYYY.csv` with the column header being the grader's names and the row header being the question name. YYYYYYY is again the assignment ID
+`--all` will update all questions for all assignments even if they are published or at 100%.
 
-By default, the program will write a file for each assignment in every course in the entire 'databse'. 
-
-To write all a file for each assignment for each class leave the course flag empty:
+### Printing to csv 
+You can use the following command to print the grading stats to a csv file:
 ```
-grading-stats
+python shell.py update <course> <assignment>
 ```
-
-To update all assignments in a single course leave the assignment flag empty:
-```
-grading-stats -course XXXXXX
-```
-
-To update a single assignment, give both a course and assignment value:
-```
-grading-stats -course XXXXXX -assignment YYYYYYY
-```
-
-### Printing to stdout
-
-If you don't want to render the csv yourself, you can pass in the '-print' flag and it will print out a rendered table to stdout.
-
-For example to pretty print a table for a single assignment
-```
-grading-stats -course XXXXXX -assignment YYYYYYY -print
-```
-
-TODO
-  + update only those that are not 100% graded
-  + interactive mode
+This does no scraping or updating so you will have to run those commands first.
