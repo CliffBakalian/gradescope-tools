@@ -6,6 +6,11 @@ import logging
 Just some utility functions. 
 '''
 
+'''
+Get the selenium driver from the selenium pacakge
+This driver is basically a headless webrowser we can send commands to
+also set up the logger
+'''
 def get_driver():
   config = dotenv_values(".env")
   username = config["USERNAME"];
@@ -15,6 +20,9 @@ def get_driver():
   driver = login(setup(),username,password)
   return driver
 
+'''
+login to gradescope using your username and password
+'''
 def login(browser,uname,pword):
   try: 
     #find the email and password parts of the login form on graedscope's site
@@ -48,6 +56,10 @@ def login(browser,uname,pword):
     logging.error("Could not find elements on Login page or gradescope is down")
     logging.error(e)
 
+'''
+I use firefox because firefox >>>>
+however chrome driver works way faster....
+'''
 def setup():
   try:
     fireFoxOptions = webdriver.firefox.options.Options()
@@ -60,6 +72,9 @@ def setup():
     logging.error("Setup Failed")
     logging.error(e)
 
+'''
+this verifies you are on the right page, i put this as precaution, 
+'''
 def checkPage(browser,url):
   try:
     actual = browser.current_url;

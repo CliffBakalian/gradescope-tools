@@ -1,22 +1,37 @@
 from datetime import datetime,timedelta
 import csv
 
-MAX_TOKENS = 6
-DAYLIGHTS_SAVINGS = datetime(2023,11,5) #CHANGE PER SEMESTER
-TZHO = -4 #TimeZoneHourOffset
+MAX_TOKENS = 1
+DAYLIGHTS_SAVINGS = datetime(2024,3,10)
+TZHO = -5 #TimeZoneHourOffset
 TZMO = 0  #TimeZoneMinuteOffet
+TOKEN_TIME = 24 #is atoken 24 hours or 12? or other?
 
-project1 = (("3242355",datetime(2023,9,10,23,59)))
-project2 = (("3295642",datetime(2023,9,19,23,59)))
-project3 = (("3359767",datetime(2023,10,6,23,59)))
-project4 = (("3466121",datetime(2023,10,15,23,59)))
-project5 = (("3531724",datetime(2023,10,30,23,59)))
-project6 = (("3616438",datetime(2023,11,15,23,59)))
-project7 = (("3694062",datetime(2023,11,29,23,59)))
-project8 = (("3758720",datetime(2023,12,11,23,59)))
-projects = [project1,project2,project3,project4,project5,project6,project7,project8]
-weights = {0:.02,1:.05,2:.08,3:.02,4:.08,5:.08,6:.02,7:.05}
-pnames=#load from gradescope/file 
+gradescope_mod = True
+
+project1 = (("4029318",datetime(2024,2,13,23,59)))
+project2 = (("4094462",datetime(2024,2,27,23,59)))
+project3 = (("4166768",datetime(2024,3,15,23,59)))
+project4 = (("4237875",datetime(2024,4,9,23,59)))
+project5 = (("4352300",datetime(2024,4,25,23,59)))
+project6 = (("4396345",datetime(2024,5,1,23,59)))
+project7 = (("4406858",datetime(2024,5,9,23,59)))
+projects = [project1,project2,project3,project4,project5,project6,project7]
+weights = {0:.03,
+           1:.05,
+           2:.08,
+           3:.08,
+           4:.08,
+           5:.03,
+           6:.05}
+
+pnames={"4029318":"project-1",
+        "4094462":"project-2",
+        "4166768":"project-3",
+        "4237875":"project-4",
+        "4352300":"project-5",
+        "4396345":"project-6",
+        "4406858":"project-7",}
 
 '''
 load project.exts file and make a hash of
@@ -47,6 +62,7 @@ def load_extensions(course):
   return exts
 
 def get_scores_per_tokens(course,user,due_date,extensions):
+  flag = False
   try:
     student_file = open(str(course)+"/"+str(user)+"."+str(course))
 
@@ -68,21 +84,60 @@ def get_scores_per_tokens(course,user,due_date,extensions):
       else:
         offset_minutes = int(time[23:25])
       submission_time = datetime(year,month,day,hour,minute)
+      if course == "709210":
+        cutoff = datetime(2023,10,15,23,59)
+        if submission_time < cutoff:
+          if flag:
+            continue
+          else:
+            flag = True
       if submission_time >= DAYLIGHTS_SAVINGS:
-        offset_hour += 1 
+        offset_hour -= 1 
       submission_time = submission_time + timedelta(hours=TZHO - offset_hour,minutes=TZMO-offset_minutes)
       
       if user in extensions:
+        initdue_date = due_date
         due_date = extensions[user]
 
       lateness_secs = (submission_time - due_date).total_seconds() # second difference between duedate and submission time
       late_hours,late_over = divmod(lateness_secs,3600)            # getting the  hours 
       late_minues = divmod(late_over,60)[0]                        # getting the miunes, dropping secondds
+      # this is if we dont take late score into gradescope
+      '''
       if late_hours < 0:
         token_scores[0] = max(token_scores[0],score)               # if submitted early
-      elif late_hours < MAX_TOKENS * 12:                          # if within token time
-        token_scores[late_hours//12+1] = max(token_scores[late_hours//12+1],score)      # find maximum score per token
+      elif late_hours < MAX_TOKENS * 24:                          # if within token time
+        token_scores[late_hours//24+1] = max(token_scores[late_hours//24+1],score/.9)      # find maximum score per token
         token_scores[0] = max(token_scores[0],score*(1-.1*(divmod(late_hours,24)[0]+1)))
+      '''
+      if late_hours < 0: # if submitted on time
+        if user in extensions and course not in ["4237875","4352300","4396345","4406858"]:
+          if (submission_time - initdue_date).total_seconds() > 180:
+            initscore = score
+            score = score/.9  
+            print("I submitted " + str(pnames[course]) + "on time with inital: " + str(initscore) + "\tmodified:" + str(score))
+        token_scores[0] = max(token_scores[0],score)  # take the max of score and new on time score 
+      elif late_hours < MAX_TOKENS * TOKEN_TIME:      # if submitted when you can with a token
+                                                      # 2 ie. 2 tokens per project, each token 24 hours
+        print("submitted time: " + str(time))
+        print("Due Date: " + str(time))
+        print("Late hours: " + str(late_hours))
+        print("Late Minutes: " + str(late_minues))
+        score_with_token = score
+
+        if gradescope_mod and course not in ["4237875","4352300","4396345","4406858"]:
+          score_with_token = score/(1-.1*(divmod(late_hours,24)[0]+1))
+        # token score at that token time is max of what used to be and new one 
+        token_scores[late_hours//TOKEN_TIME+1] = max(token_scores[late_hours//TOKEN_TIME+1],score_with_token) 
+
+        late_score = score
+        if not gradescope_mod or course in ["4237875","4352300","4396345","4406858"]:
+          late_score = score*(1-.1*(divmod(late_hours,24)[0]+1))
+
+        # score with 0 tokens is now what was there and score with late penalty
+        token_scores[0] = max(token_scores[0],late_score)
+        print("I submitted " + str(pnames[course]) + " late with score " + str(score_with_token) + " and late score of " + str(late_score))
+
     return token_scores 
   except:
     token_scores = {}
@@ -98,12 +153,12 @@ def get_students(course=None):
       students.append(line.split(",")[0]) 
     return students 
   else:
-    roster = open('roster')
+    roster = open('roster.csv')
     for line in roster:
       students.append(line.strip()) 
     return list(set(students))
 
-TOTAL_TOKENS = 9
+TOTAL_TOKENS = 3
 def choose(scores):
   # current path, how many tokens used, current score, which project are you proccessing
   def helper(path,scores_left,tokens_used,curr_score,project_idx):
@@ -148,7 +203,7 @@ def make_csv():
 
   out = open('scores.csv','a')
   writer = csv.writer(out)
-  students = get_students() #projects[-2][0])
+  students = ['Edna Adissu'] #get_students() #projects[-2][0])
   for x in students:
     row = [x]
     all_scores = []
@@ -158,6 +213,7 @@ def make_csv():
       extensions = load_extensions(project)
       student = x 
       scores = get_scores_per_tokens(project,student,duedate,extensions)
+      print(scores)
       for z in scores:
         all_scores.append(scores[z])
     projects_chosen,final_score = choose(all_scores)
