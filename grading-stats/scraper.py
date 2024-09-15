@@ -109,8 +109,9 @@ def scrapeQuestions(browser,course,assignment):
 
 '''
 Each question submission has table of questions, the points, and the grader. 
-We only care about the grader.
+We care about the grader and the points.
 return a dict of (grader_name: count)
+and a dict of {grader_name: total points given}
 the url here does not use assignmne,but course and question id
 '''
 def scrapeCount(browser,course,question):
@@ -119,6 +120,7 @@ def scrapeCount(browser,course,question):
   if checkPage(browser,expected):
     TABLE_NAME = "question_submissions"
     ret = {}
+    total= {}
     try:
       questionTable = browser.find_element(By.ID, TABLE_NAME).find_element(By.TAG_NAME,"tbody") #table  only one that uses an id, weird.
       # this table alternames names "odd" and "even". No other table does. Weird.
@@ -127,15 +129,19 @@ def scrapeCount(browser,course,question):
       for elem in questionList:
         # need to get name. It is the third column in the table 
         third_column = elem.find_elements(By.TAG_NAME,"td")[2]
+        fifth_column = elem.find_elements(By.TAG_NAME,"td")[4]
         name = third_column.text
+        score = float(fifth_column.text)
         if name != '':
           if name in ret:
             ret[name] += 1
+            total[name] += float(score)
           else:
             ret[name] = 1
+            total[name] = float(score)
     except:
-      print("Could not scrape count for course: " + course + "question: " + question)
-    return ret
+      print("Could not scrape count for course: " + course + "\t question: " + question)
+    return ret,total
   else:
     browser.close()
     logging.error("Question page for " + course + " Not Found: check course ID")
@@ -163,7 +169,7 @@ def scrapeGraders(browser,course_id):
       for row in rosterList:
         ret.append(row.text) 
     except:
-      print("Could not scrape roster for course: " + course)
+      print("Could not scrape roster for course: " + course_id)
     return list(set(ret))
   else:
     browser.close()

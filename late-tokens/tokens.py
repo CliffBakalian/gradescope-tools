@@ -1,22 +1,36 @@
 from datetime import datetime,timedelta
 import csv
 
-MAX_TOKENS = 1
-DAYLIGHTS_SAVINGS = datetime(2024,3,10)
-TZHO = -5 #TimeZoneHourOffset
-TZMO = 0  #TimeZoneMinuteOffet
-TOKEN_TIME = 24 #is atoken 24 hours or 12? or other?
+TOTAL_TOKENS = 3 # total tokens a student has
+MAX_TOKENS = 1 # maximum number of tokens per project
+
+#Daylights savings *S*tart and *E*nd
+EDT_S = datetime(2024,3,10)
+EDT_E  = datetime(2024,11,3)
+
+#people that submit 3 minutes late (12:02 am we give leeway)
+GRACE_PERIOD_MINUTES = 3 
+
+TOKEN_TIME = 24 #is a token 24 hours or 12? or other?
 
 gradescope_mod = True
 
-project1 = (("4029318",datetime(2024,2,13,23,59)))
-project2 = (("4094462",datetime(2024,2,27,23,59)))
-project3 = (("4166768",datetime(2024,3,15,23,59)))
-project4 = (("4237875",datetime(2024,4,9,23,59)))
-project5 = (("4352300",datetime(2024,4,25,23,59)))
-project6 = (("4396345",datetime(2024,5,1,23,59)))
-project7 = (("4406858",datetime(2024,5,9,23,59)))
+project1 = (("4029318",datetime(2024,2,13,23,59,59)))
+project2 = (("4094462",datetime(2024,2,27,23,59,59)))
+project3 = (("4166768",datetime(2024,3,15,23,59,59)))
+project4 = (("4237875",datetime(2024,4,9,23,59,59)))
+project5 = (("4352300",datetime(2024,4,25,23,59,59)))
+project6 = (("4396345",datetime(2024,5,1,23,59,59)))
+project7 = (("4406858",datetime(2024,5,9,23,59,59)))
 projects = [project1,project2,project3,project4,project5,project6,project7]
+
+# change due dates to GMT
+projects = list(map(lambda x: 
+            (x[0],x[1]+ timedelta(hours=4,minutes=GRACE_PERIOD_MINUTES)) 
+              if EDT_S < x[1] < EDT_E else
+                (x[0],x[1]+ timedelta(hours=5,minutes=GRACE_PERIOD_MINUTES)),
+            projects))
+
 weights = {0:.03,
            1:.05,
            2:.08,
@@ -40,35 +54,37 @@ name -> due_date
 def load_extensions(course):
   extension_file = open(str(course)+"/"+str(course)+".exts")
   exts = {}
+  # the extension line could be for something that is not a dude date change
   for line in extension_file:
     info = line.split(",")
-    name = info[0]
-    time = info[2]
-    year = int(time[0:4])
-    month = int(time[5:7])
-    day = int(time[8:10])
-    hour = int(time[11:13])
-    minute = int(time[14:16])
-    offset_hour = int(time[20:23])
-    if time[23] == ":": #formatting is weird
-      offset_minutes = int(time[24:26])
-    else:
+    if info: # if they have 
+      name = info[0]
+      time = info[2]
+      year = int(time[0:4])
+      month = int(time[5:7])
+      day = int(time[8:10])
+      hour = int(time[11:13])
+      minute = int(time[14:16])
+      offset_hour = int(time[20:23])
       offset_minutes = int(time[23:25])
-    extension = datetime(year,month,day,hour,minute)
-    if extension >= DAYLIGHTS_SAVINGS: #fuck daylights saving
-      offset_hour += 1 #one is -4, and the other is -5
-    extension = extension + timedelta(hours=TZHO - offset_hour,minutes=TZMO-offset_minutes)
-    exts[name] = extension 
+      seconds = 59
+      extension = datetime(year,month,day,hour,minute,seconds)
+
+      # convert to GMT
+      extension = extension + timedelta(hours=-offset_hour,
+                                        minutes=offset_minutes)
+      exts[name] = extension 
   return exts
 
-def get_scores_per_tokens(course,user,due_date,extensions):
+def get_scores_per_tokens(assignment,user,due_date,extensions):
   flag = False
-  try:
-    student_file = open(str(course)+"/"+str(user)+"."+str(course))
 
-    token_scores = {}
-    for x in range(MAX_TOKENS+1):
-      token_scores[x] = 0 
+  token_scores = {}
+  for x in range(MAX_TOKENS+1): #from 0,1,2,...MAX_TOKENS
+    token_scores[x] = 0 
+  try:
+    student_file = open(str(assignment)+"/"+str(user)+"."+str(assignment))
+
     for line in student_file:
       info = line.split(",")
       score= int(float(info[1].strip()))
@@ -78,72 +94,88 @@ def get_scores_per_tokens(course,user,due_date,extensions):
       day = int(time[8:10])
       hour = int(time[11:13])
       minute = int(time[14:16])
+      seconds = 59
       offset_hour = int(time[19:22])
+
+      #gradescope doesn't format consistently >:(!!!!!!
       if time[23] == ":":
         offset_minutes = int(time[24:26])
       else:
         offset_minutes = int(time[23:25])
-      submission_time = datetime(year,month,day,hour,minute)
-      if course == "709210":
+
+      submission_time = datetime(year,month,day,hour,minute,seconds)
+
+#'''--------------------------------------------------------------------------'''
+# we messed up autograder and we should discard all scores made before this time
+      if assignment == "709210": 
         cutoff = datetime(2023,10,15,23,59)
         if submission_time < cutoff:
           if flag:
             continue
           else:
             flag = True
-      if submission_time >= DAYLIGHTS_SAVINGS:
-        offset_hour -= 1 
-      submission_time = submission_time + timedelta(hours=TZHO - offset_hour,minutes=TZMO-offset_minutes)
+#'''-------------------------------------------------------------------------'''
+
+      submission_time = submission_time + timedelta(hours=-offset_hour,
+                                                    minutes=offset_minutes)
       
       if user in extensions:
         initdue_date = due_date
         due_date = extensions[user]
+      
+      # second difference between duedate and submission time
+      lateness_secs = (submission_time - due_date).total_seconds() 
+      # getting the  hours 
+      late_hours,late_over = divmod(lateness_secs,3600)            
+      # getting the minutes, dropping seconds
+      late_minutes = divmod(late_over,60)[0]                        
 
-      lateness_secs = (submission_time - due_date).total_seconds() # second difference between duedate and submission time
-      late_hours,late_over = divmod(lateness_secs,3600)            # getting the  hours 
-      late_minues = divmod(late_over,60)[0]                        # getting the miunes, dropping secondds
       # this is if we dont take late score into gradescope
-      '''
-      if late_hours < 0:
-        token_scores[0] = max(token_scores[0],score)               # if submitted early
-      elif late_hours < MAX_TOKENS * 24:                          # if within token time
-        token_scores[late_hours//24+1] = max(token_scores[late_hours//24+1],score/.9)      # find maximum score per token
-        token_scores[0] = max(token_scores[0],score*(1-.1*(divmod(late_hours,24)[0]+1)))
-      '''
       if late_hours < 0: # if submitted on time
-        if user in extensions and course not in ["4237875","4352300","4396345","4406858"]:
-          if (submission_time - initdue_date).total_seconds() > 180:
-            initscore = score
+        '''
+        this semester tried to do late penalty in gradescope for projects 1-3
+        gradescope due date did not include extensions so it just gave penalty 
+        to everyone who submitted after the initial duedate regardless if they
+        had an extension. SO here if the user has an extension and this is a
+        project 1-3 score, revert the change
+        '''
+        if user in extensions and assignment not in ["4237875","4352300","4396345","4406858"]:
+          if (submission_time > initdue_date):
             score = score/.9  
-            print("I submitted " + str(pnames[course]) + "on time with inital: " + str(initscore) + "\tmodified:" + str(score))
-        token_scores[0] = max(token_scores[0],score)  # take the max of score and new on time score 
-      elif late_hours < MAX_TOKENS * TOKEN_TIME:      # if submitted when you can with a token
-                                                      # 2 ie. 2 tokens per project, each token 24 hours
-        print("submitted time: " + str(time))
-        print("Due Date: " + str(time))
-        print("Late hours: " + str(late_hours))
-        print("Late Minutes: " + str(late_minues))
-        score_with_token = score
+        
+        # take the max of score and new on time score 
+        token_scores[0] = max(token_scores[0],score)  
 
-        if gradescope_mod and course not in ["4237875","4352300","4396345","4406858"]:
-          score_with_token = score/(1-.1*(divmod(late_hours,24)[0]+1))
+      # if submitted when you can with a token
+      # 2 ie. 2 tokens per project, each token 24 hours
+      elif late_hours < MAX_TOKENS * TOKEN_TIME:      
+        '''
+        Again the late penalty already calculated for project 1-3
+        in this case though we need to make sure they submitted within 24 hours
+        of their due date since some people could be submitting for the GFA
+        '''
+        if assignment not in ["4237875","4352300","4396345","4406858"]:
+          score_with_token = score/.9 #(1-.1*(divmod(late_hours,TOKEN_TIME)[0]+1))
+        else:
+          score_with_token = score
+
         # token score at that token time is max of what used to be and new one 
-        token_scores[late_hours//TOKEN_TIME+1] = max(token_scores[late_hours//TOKEN_TIME+1],score_with_token) 
-
+        token_number = late_hours//TOKEN_TIME+1
+        token_scores[token_number] = max(token_scores[token_number],
+                                                     score_with_token) 
+        
+        # now calculate score with penalty
         late_score = score
-        if not gradescope_mod or course in ["4237875","4352300","4396345","4406858"]:
-          late_score = score*(1-.1*(divmod(late_hours,24)[0]+1))
+        if assignment in ["4237875","4352300","4396345","4406858"]:
+          late_score = score*.9 #*(1-.1*(divmod(late_hours,24)[0]+1))
 
         # score with 0 tokens is now what was there and score with late penalty
         token_scores[0] = max(token_scores[0],late_score)
-        print("I submitted " + str(pnames[course]) + " late with score " + str(score_with_token) + " and late score of " + str(late_score))
 
-    return token_scores 
-  except:
-    token_scores = {}
-    for x in range(MAX_TOKENS+1):
-      token_scores[x] = 0 
-    return token_scores
+  except Exception as ex:
+    print("ERROR WITH TOKENS- Assignment: " + str(assignment) + 
+          "\t user: " + str(user))
+  return token_scores
   
 def get_students(course=None):
   students = []
@@ -158,7 +190,6 @@ def get_students(course=None):
       students.append(line.strip()) 
     return list(set(students))
 
-TOTAL_TOKENS = 3
 def choose(scores):
   # current path, how many tokens used, current score, which project are you proccessing
   def helper(path,scores_left,tokens_used,curr_score,project_idx):
@@ -184,14 +215,15 @@ def choose(scores):
     return to_return,total_score
   return helper([],scores,0,0,0)
 
+
 '''
 need: list of students
 need: ["proje_name",datetime(duedate)]
 '''
-def make_csv():
+def make_csv(students,projects):
   out = open('scores.csv','w')
   writer = csv.writer(out)
-  header = ["name"]
+  header = ["name","SID"]
   results_header = []
   for y in projects:
     for x in range(MAX_TOKENS +1):
@@ -203,20 +235,20 @@ def make_csv():
 
   out = open('scores.csv','a')
   writer = csv.writer(out)
-  students = ['Edna Adissu'] #get_students() #projects[-2][0])
   for x in students:
-    row = [x]
+    x = x.split(",")
+    row = [x[0],x[1]]
     all_scores = []
     for y in projects:
       project = y[0]
       duedate = y[1]
       extensions = load_extensions(project)
-      student = x 
+      student = x[0]
       scores = get_scores_per_tokens(project,student,duedate,extensions)
-      print(scores)
       for z in scores:
         all_scores.append(scores[z])
     projects_chosen,final_score = choose(all_scores)
     writer.writerow(row+all_scores+projects_chosen+[final_score])
       
-make_csv()
+students = get_students() #projects[-2][0])
+make_csv(students,projects)

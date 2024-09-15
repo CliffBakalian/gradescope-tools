@@ -13,7 +13,7 @@ def get_driver():
   try:
     cookies = pickle.load(open("gs.pkl","rb"))
     driver = setup()
-    driver.get("https://www.gradescope.com")
+    driver.get("https://www.gradescope.com/account")
     for cookie in cookies:
       driver.add_cookie(cookie)
     return driver
@@ -56,7 +56,7 @@ def login(browser,uname,pword):
     expected = "https://www.gradescope.com/account" 
     if checkPage(browser,expected):
       logging.info("Login Successful")
-      pickle.dump(browser.get_cookies(),open("gs.pkl","wb"))
+      #pickle.dump(browser.get_cookies(),open("gs.pkl","wb"))
       return browser
     else:
       browser.close()
@@ -88,7 +88,7 @@ def checkPage(browser,url):
     logging.info("act: "+actual)
     logging.info("url: "+url)
     #IDK I NEED TO FIX THIS!!!!
-    return True
+    #return True
     if actual == url or actual[:-1] == url or actual[:-2] == url:
       return True 
     else:
@@ -185,6 +185,20 @@ def store_counts(assignment_id,question,counts):
     if q['name'] == question:
       found = True
       q['counts'] = counts
+  with open(assignment_id+".json","w") as assignmentjson:
+    assignmentjson.write(json.dumps(assignment,indent=2))
+
+'''
+given an assignment id, a question title and the points given by the graders
+store the points in assignment_name.json
+can be used to update counts
+'''
+def store_points(assignment_id,question,points):
+  assignment = get_assignment_json(assignment_id)
+  for q in assignment['questions']:
+    if q['name'] == question:
+      found = True
+      q['points'] =points 
   with open(assignment_id+".json","w") as assignmentjson:
     assignmentjson.write(json.dumps(assignment,indent=2))
 

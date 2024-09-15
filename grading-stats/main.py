@@ -10,10 +10,42 @@ driver = get_driver()
 def first_time():
   do_it_all(driver)
 
+
+#courses = scrapeCourses(driver)
+#store_courses(courses)
+
+courses = [("fall24",'822297')]
+store_courses(courses)
+course_name = courses[0][0]
+course_id = courses[0][1]
+
+#for course in courses:
+#  graders = scrapeGraders(driver,course[1])
+#  store_graders(course[0],graders)
+
+assignments = scrapeAssignments(driver,course_id)
+
+# will store assignment to course_name.json and 
+# will make an assignment_id.json to store grading stats
+# run once to setup information or to wipe all assignments data 
+store_assignments(course_name,assignments)
+
+update_assignments(driver,course_name)
+
+for assignment_name,assignment_id,published in assignments:
+  questions = scrapeQuestions(driver,course_id,assignment_id)
+
+  store_questions(course_name,assignment_name,questions)
+
+  for question_name,question_id,_ in questions:
+    counts,points = scrapeCount(driver,course_id,question_id)
+    store_counts(assignment_id,question_name,counts)
+    store_points(assignment_id,question_name,points)
+
 def examples():
-  # get a [(course_name, course_id)]
-  # driver -> (string,string) tuple list
-  # only need to run once per semester
+# get a [(course_name, course_id)]
+# driver -> (string,string) tuple list
+# only need to run once per semester
   courses = scrapeCourses(driver)
 
   # will write the course_name.json file for each course
@@ -62,9 +94,9 @@ def examples():
   # will store the question data in assignment_id.json
   store_questions(course_name,assignment_name,questions)
 
-  # get a {grader:count} dictionary
+  # get a ({grader:count},{grader:points given}) tuple 
   # driver,course_id,question_id -> {string:int} dict
-  counts = scrapeCount(driver,course_id,question_id)
+  counts,points = scrapeCount(driver,course_id,question_id)
 
   # will get how many questions people graded on gradescope and store this
   # information in assignment_id.json

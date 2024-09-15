@@ -23,8 +23,9 @@ def do_it_all(driver):
         questions = scrapeQuestions(driver,link,alink)
         store_questions(name,aname,questions)
         for (qname,qlink,_) in questions:
-          counts = scrapeCount(driver,link,qlink)
+          counts,points = scrapeCount(driver,link,qlink)
           store_counts(alink,qname,counts)
+          store_points(alink,qname,points)
 
 
 '''
@@ -87,12 +88,15 @@ def update_counts(driver,course,assignment_id,question_id=None):
   if question_id:
     for q in assign['questions']:
       if q['link'] == question_id:
-        counts = scrapeCount(driver,course_id,question_id)
+        counts,points = scrapeCount(driver,course_id,question_id)
         q['counts'] = counts
+        q['total_points_given'] = points
         store_counts(assignment_id,q['name'],counts)
+        store_points(assignment_id,q['name'],points)
   else:
     for assignment in coursejson['assignments']:
       if assignment['link'] == assignment_id:
         for q in assignment['questions']:
-          counts = scrapeCount(driver,course_id,q['link'])
+          counts,points = scrapeCount(driver,course_id,q['link'])
           store_counts(assignment_id,q['name'],counts)
+          store_counts(assignment_id,q['name'],points)

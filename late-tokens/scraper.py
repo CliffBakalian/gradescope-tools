@@ -299,7 +299,7 @@ def cache_extension(driver,course,assignment):
     if exts:
       for s,l,d,ld in exts:
         f.write(str(s)+","+str(l)+","+str(d)+","+str(ld)+"\n") 
-  logging.info("Cached extensions for " + str(assignmnet) + " !")
+  logging.info("Cached extensions for " + str(assignment) + " !")
 
 """
 driver: a selenium driver 
@@ -350,7 +350,7 @@ def cacheSingleStudentHistory(driver,course,assignment,submission,student):
 
 
 """
-driver: a selenium driver 
+#driver: a selenium driver 
 course: string of course ID
 assignment: string of the assignment ID
 submission_with_names: (string,string) list-the result of calling
@@ -359,9 +359,10 @@ submission_with_names: (string,string) list-the result of calling
 this will go through all (name,submission) pairs in submission_with_names and
 cache each student's submissions via the Pool class of multiprocessing
 """
-def cach_histories(driver,course,assignment,submissions_with_names):
+def cache_histories(course,assignment,submissions_with_names):
   def worker(x):
     (student,submission) = x
+    driver = get_driver()
     cacheSingleStudentHistory(driver,course,assignment,submission,student)
   processes = mp.Pool(mp.cpu_count())
   processes.map(worker,submissions_with_names)
