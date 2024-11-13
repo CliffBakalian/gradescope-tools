@@ -99,4 +99,4 @@ def update_counts(driver,course,assignment_id,question_id=None):
         for q in assignment['questions']:
           counts,points = scrapeCount(driver,course_id,q['link'])
           store_counts(assignment_id,q['name'],counts)
-          store_counts(assignment_id,q['name'],points)
+          store_points(assignment_id,q['name'],points)

@@ -13,9 +13,11 @@ driver = get_driver()
 
 courses = [("fall24",'822297')]
 course_name = courses[0][0]
-assignments = ["4954497", "4954543", "4954560", "4954567"]
+assignments = ["5058668", "5058692", "5058694", "5058696"]
+#assignments = ["4954497"]
 
 for assignment_id in assignments:
   now = datetime.now().replace(microsecond=0).isoformat()
   shutil.copy(assignment_id+".json", "history/"+assignment_id+"."+now+".json")
   update_counts(driver,course_name,assignment_id)
+driver.quit()

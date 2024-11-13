@@ -33,14 +33,18 @@ store_assignments(course_name,assignments)
 update_assignments(driver,course_name)
 
 for assignment_name,assignment_id,published in assignments:
-  questions = scrapeQuestions(driver,course_id,assignment_id)
+  iassignments = ["5218298", "5218472", "5218475","5218499"]
+  if assignment_id in iassignments: 
+    questions = scrapeQuestions(driver,course_id,assignment_id)
 
-  store_questions(course_name,assignment_name,questions)
-
-  for question_name,question_id,_ in questions:
-    counts,points = scrapeCount(driver,course_id,question_id)
-    store_counts(assignment_id,question_name,counts)
-    store_points(assignment_id,question_name,points)
+    store_questions(course_name,assignment_name,questions)
+    '''
+    for question_name,question_id,_ in questions:
+      counts,points = scrapeCount(driver,course_id,question_id)
+      store_counts(assignment_id,question_name,counts)
+      store_points(assignment_id,question_name,points)
+    '''
+driver.quit()
 
 def examples():
 # get a [(course_name, course_id)]

@@ -125,22 +125,36 @@ def scrapeCount(browser,course,question):
       questionTable = browser.find_element(By.ID, TABLE_NAME).find_element(By.TAG_NAME,"tbody") #table  only one that uses an id, weird.
       # this table alternames names "odd" and "even". No other table does. Weird.
       questionList = questionTable.find_elements(By.TAG_NAME, "tr") 
-
-      for elem in questionList:
+    except:
+      print("Could not get table while scraping count for course: " + course + "; question: " + question)
+    for elem in questionList:
+      try:
         # need to get name. It is the third column in the table 
         third_column = elem.find_elements(By.TAG_NAME,"td")[2]
         fifth_column = elem.find_elements(By.TAG_NAME,"td")[4]
+      except:
+        print("Could not get column 3 and 5 while scraping count for course: " + course + "; question: " + question)
+      try:
         name = third_column.text
         score = float(fifth_column.text)
+      except:
+        print("Could not get column data while scraping count for course: " + course + "; question: " + question)
+      try:
         if name != '':
           if name in ret:
-            ret[name] += 1
-            total[name] += float(score)
+            try:
+              ret[name] += 1
+              total[name] += float(score)
+            except:
+              print("probably an error with score or key count for course: " + course + "; question: " + question)
           else:
-            ret[name] = 1
-            total[name] = float(score)
-    except:
-      print("Could not scrape count for course: " + course + "\t question: " + question)
+            try:
+              ret[name] = 1
+              total[name] = float(score)
+            except:
+              print("probably an error with score or key count for course: " + course + "; question: " + question)
+      except:
+        print("Could not scrape count for course: " + course + "\t question: " + question)
     return ret,total
   else:
     browser.close()
